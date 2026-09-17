@@ -38,7 +38,7 @@ fi
 for proj in tests/GenCollector.Tests/GenCollector.Tests.csproj tests/GenDashboard.Tests/GenDashboard.Tests.csproj tests/ReliabilityTests/ReliabilityTests.csproj; do
     [ -f "$proj" ] || continue
     if [[ "$proj" == *GenCollector* ]]; then
-        args=( "$proj" -c Release "-p:PlatformTarget=x86" --no-build --nologo -v quiet )
+        args=( "$proj" -c Release "-r" "win-x86" "-p:PlatformTarget=x86" --no-build --nologo -v quiet )
     else
         args=( "$proj" -c Release --no-build --nologo -v quiet )
     fi

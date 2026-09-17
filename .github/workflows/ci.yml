@@ -2,9 +2,9 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop, 'feat/**']
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   # L1-alpha 阶段建立的契约一致性检查
@@ -206,3 +206,22 @@ jobs:
           name: reliability-toolchain-test-report
           path: tests/ReliabilityTests/TestResults/**/reliability-toolchain.trx
           if-no-files-found: warn
+
+  # ============================================
+  # 架构测试（NetArchTest.Rules）
+  # 规则 1：IoTPlatform.Core 不依赖 Adapters / UI / Host
+  # net8.0 纯后端依赖，可在 ubuntu 运行（无需 WPF）
+  # ============================================
+  architecture-tests:
+    name: Architecture Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Test (build + run architecture rules)
+        run: dotnet test tests/ArchitectureTests/ArchitectureTests.csproj -c Release /p:TreatWarningsAsErrors=true

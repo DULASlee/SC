@@ -1,0 +1,17 @@
+<Project>
+
+  <!--
+    后端（src/Backend/*）通用 MSBuild 配置。
+    必须显式 import 仓库根的 Directory.Build.props，否则一旦本文件成为
+    后端工程的最近 props，根 props 里的 TreatWarningsAsErrors / BannedApiAnalyzers /
+    coverlet 注入等都会丢失。
+  -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!-- 后端通用：Core / Adapters / Host 三个工程均已启用，统一在此声明，行为不变 -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

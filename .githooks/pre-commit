@@ -31,6 +31,7 @@ PROJECTS=(
     "src/Frontend/GenDashboard/GenDashboard.csproj"
     "tests/GenCollector.Tests/GenCollector.Tests.csproj"
     "tests/GenDashboard.Tests/GenDashboard.Tests.csproj"
+    "tests/ReliabilityTests/ReliabilityTests.csproj"
     "src/Backend/IoTPlatform.Core/IoTPlatform.Core.csproj"
     "src/Backend/IoTPlatform.Adapters/IoTPlatform.Adapters.csproj"
     "src/Backend/IoTPlatform.Host/IoTPlatform.Host.csproj"

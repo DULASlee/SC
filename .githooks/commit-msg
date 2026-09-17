@@ -18,18 +18,24 @@ EXEMPT_PREFIXES=(
     "feat(local-ci"
 )
 
+# 豁免的 conventional commit type 白名单（配置类、文档类、harness 自身提交）
+EXEMPT_TYPES=(chore docs feat fix style test ci build)
+
 FIRST_LINE="$(echo "$COMMIT_MSG" | head -n 1)"
 
-for prefix in "${EXEMPT_PREFIXES[@]}"; do
-    # 豁免匹配：commit message 类型 type 字段含豁免前缀关键字（如 "chore" 或 "docs"）即可。
-    # 原架构师设计是精确前缀（如 "chore:"），但 commit 格式常为 "chore(scope): ..."
-    # 用 "type(scope):" 的 type 段作匹配，更宽松且兼容。
-    type_word="${prefix%:}"  # 去掉冒号
-    # 提取 type_word（首段字母数字），匹配 "type_word(" 或 "type_word:" 或纯 "type_word"
-    if [[ "$FIRST_LINE" =~ ^($type_word(\(|\:|[[:space:]]|$)) ]]; then
-        exit 0
-    fi
-done
+# 提取 conventional commit 的 type 段：首个 '(' 或 ':' 之前的字母词。
+# 原实现把整个前缀（如 "fix(ci)"）当正则拼入，括号被解释成捕获组，
+# 导致 "fix(ci):" / "feat(lN):" 等带括号前缀永远匹配不到（正则未转义 bug）。
+# 改为只取 type 词本身并与白名单比对；正则放入变量避免 bash 对内联 [(:] 的解析歧义。
+TYPE_RE='^([a-zA-Z]+)[(:]'
+if [[ "$FIRST_LINE" =~ $TYPE_RE ]]; then
+    COMMIT_TYPE="${BASH_REMATCH[1]}"
+    for t in "${EXEMPT_TYPES[@]}"; do
+        if [ "$COMMIT_TYPE" = "$t" ]; then
+            exit 0
+        fi
+    done
+fi
 
 if ! echo "$FIRST_LINE" | grep -qE "TASK-[0-9]{3,}"; then
     echo "[FAIL] commit message 必须引用 TASK-XXX 或以豁免前缀开头" >&2

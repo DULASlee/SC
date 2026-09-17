@@ -223,5 +223,10 @@ bash scripts/setup-local-ci.sh
 ### 紧急出口
 
 - `SKIP_PROTECTED_CHECK=1`：架构师本人绕过受保护路径 APPROVED-BY 检查
-- `git commit -m "..." --no-verify`：跳过所有 hooks（**不推荐**，违反 L5 规则 2）
+
+### 禁止 --no-verify（硬规则）
+
+> **禁止使用 `git commit --no-verify` / `git push --no-verify`。如 hook 报错无法解决，停止并报告架构师，不绕过。**
+
+本地 hooks 是 L0–L3 门禁体系的第一层。用 `--no-verify` 绕过等同于"自己给自己开后门"，会使"通过"不再代表"真通过"，动摇整个 gate 的可信度。详见 `docs/incidents/INC-001-no-verify-usage.md`。
 

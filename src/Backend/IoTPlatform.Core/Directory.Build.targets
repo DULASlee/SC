@@ -1,0 +1,19 @@
+<Project>
+
+  <!--
+    IoTPlatform.Core 编译期依赖约束（构造期阻断，非事后检测）。
+    Core 是平台无关的领域/抽象层，禁止引入 EF Core 与 ASP.NET Core，
+    防止持久化 / Web 框架依赖渗漏进核心层。
+    若违规，ResolveReferences 之后立即以 Error 中断编译。
+  -->
+  <Target Name="ForbidInfrastructureReferencesInCore" AfterTargets="ResolveReferences">
+    <ItemGroup>
+      <_CoreForbiddenRef Include="@(ReferencePath)"
+        Condition="$([System.String]::Copy('%(ReferencePath.FileName)').StartsWith('Microsoft.EntityFrameworkCore'))
+                   OR $([System.String]::Copy('%(ReferencePath.FileName)').StartsWith('Microsoft.AspNetCore'))" />
+    </ItemGroup>
+   <Error Condition="'@(_CoreForbiddenRef)' != ''"
+           Text="IoTPlatform.Core 禁止引用 EF Core / ASP.NET Core，检测到: @(_CoreForbiddenRef->'%(FileName)', ', ')" />
+  </Target>
+
+</Project>
