@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\IoTPlatform.Core\IoTPlatform.Core.csproj" />
+    <ProjectReference Include="..\..\src\Backend\IoTPlatform.Core\IoTPlatform.Core.csproj" />
   </ItemGroup>
 
 </Project>

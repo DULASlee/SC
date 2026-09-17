@@ -35,9 +35,9 @@ if [ "$remote" = "origin" ]; then
 fi
 
 # 1. 全测试（仓库无 .sln，逐个工程）
-for proj in GenCollector.Tests/GenCollector.Tests.csproj GenDashboard.Tests/GenDashboard.Tests.csproj tests/ReliabilityTests/ReliabilityTests.csproj; do
+for proj in tests/GenCollector.Tests/GenCollector.Tests.csproj tests/GenDashboard.Tests/GenDashboard.Tests.csproj tests/ReliabilityTests/ReliabilityTests.csproj; do
     [ -f "$proj" ] || continue
-    if [[ "$proj" == GenCollector* ]]; then
+    if [[ "$proj" == *GenCollector* ]]; then
         args=( "$proj" -c Release "-p:PlatformTarget=x86" --no-build --nologo -v quiet )
     else
         args=( "$proj" -c Release --no-build --nologo -v quiet )

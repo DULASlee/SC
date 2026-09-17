@@ -1,7 +1,7 @@
 {
   "stryker-config": {
-    "project": "GenCollector/GenCollector.csproj",
-    "test-projects": ["GenCollector.Tests/GenCollector.Tests.csproj"],
+    "project": "src/Collector/GenCollector/GenCollector.csproj",
+    "test-projects": ["tests/GenCollector.Tests/GenCollector.Tests.csproj"],
     "reporters": ["html", "json"],
     "thresholds": {
       "high": 40,

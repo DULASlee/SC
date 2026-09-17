@@ -72,13 +72,13 @@ def main() -> int:
     lines.append("## 门禁结果\n")
     # 注：本仓库无 .sln 文件，逐个工程 build/test。
     # GenCollector 必须 x86（ADR-0003）；其它工程直接 default platform。
-    proj_main="GenCollector/GenCollector.csproj"
+    proj_main="src/Collector/GenCollector/GenCollector.csproj"
     proj_main_args="-c Release -r win-x86 --self-contained true -p:PlatformTarget=x86"
     test_main_args="-c Release -p:PlatformTarget=x86"
-    proj_tests="GenCollector.Tests/GenCollector.Tests.csproj"
-    proj_other_tests="GenDashboard.Tests/GenDashboard.Tests.csproj"
+    proj_tests="tests/GenCollector.Tests/GenCollector.Tests.csproj"
+    proj_other_tests="tests/GenDashboard.Tests/GenDashboard.Tests.csproj"
     proj_reliability="tests/ReliabilityTests/ReliabilityTests.csproj"
-    proj_iot="source/IoTPlatform/src/IoTPlatform.Host/IoTPlatform.Host.csproj"
+    proj_iot="src/Backend/IoTPlatform.Host/IoTPlatform.Host.csproj"
     proj_iot_args="-c Release"
 
     checks: list[tuple[str, str]] = [

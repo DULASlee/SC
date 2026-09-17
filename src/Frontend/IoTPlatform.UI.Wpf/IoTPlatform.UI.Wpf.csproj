@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\IoTPlatform.Core\IoTPlatform.Core.csproj" />
-    <ProjectReference Include="..\..\src\IoTPlatform.Adapters\IoTPlatform.Adapters.csproj" />
+    <ProjectReference Include="..\..\Backend\IoTPlatform.Core\IoTPlatform.Core.csproj" />
+    <ProjectReference Include="..\..\Backend\IoTPlatform.Adapters\IoTPlatform.Adapters.csproj" />
   </ItemGroup>
 
   <ItemGroup>

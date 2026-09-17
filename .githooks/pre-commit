@@ -27,18 +27,18 @@ python scripts/check-contract-consistency.py || fail "契约一致性失败"
 # 注：本仓库无 .sln 文件，逐个工程 build。
 #     用 bash 数组传参（避免行末 \ 续行吞参数）。
 PROJECTS=(
-    "GenCollector/GenCollector.csproj"
-    "GenDashboard/GenDashboard.csproj"
-    "GenCollector.Tests/GenCollector.Tests.csproj"
-    "GenDashboard.Tests/GenDashboard.Tests.csproj"
-    "source/IoTPlatform/src/IoTPlatform.Core/IoTPlatform.Core.csproj"
-    "source/IoTPlatform/src/IoTPlatform.Adapters/IoTPlatform.Adapters.csproj"
-    "source/IoTPlatform/src/IoTPlatform.Host/IoTPlatform.Host.csproj"
-    "source/IoTPlatform/samples/IoTPlatform.UI.Wpf/IoTPlatform.UI.Wpf.csproj"
+    "src/Collector/GenCollector/GenCollector.csproj"
+    "src/Frontend/GenDashboard/GenDashboard.csproj"
+    "tests/GenCollector.Tests/GenCollector.Tests.csproj"
+    "tests/GenDashboard.Tests/GenDashboard.Tests.csproj"
+    "src/Backend/IoTPlatform.Core/IoTPlatform.Core.csproj"
+    "src/Backend/IoTPlatform.Adapters/IoTPlatform.Adapters.csproj"
+    "src/Backend/IoTPlatform.Host/IoTPlatform.Host.csproj"
+    "src/Frontend/IoTPlatform.UI.Wpf/IoTPlatform.UI.Wpf.csproj"
 )
 for proj in "${PROJECTS[@]}"; do
     [ -f "$proj" ] || continue
-    if [[ "$proj" == GenCollector* ]]; then
+    if [[ "$proj" == *GenCollector* ]]; then
         args=( "$proj" -c Release -r win-x86 --self-contained true "-p:PlatformTarget=x86" "-p:TreatWarningsAsErrors=true" --nologo -v quiet )
     else
         args=( "$proj" -c Release "-p:TreatWarningsAsErrors=true" --nologo -v quiet )

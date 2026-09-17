@@ -13,7 +13,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\GenDashboard\GenDashboard.csproj" />
+    <ProjectReference Include="..\..\src\Frontend\GenDashboard\GenDashboard.csproj" />
     <Content Include="telemetry.jsonl" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

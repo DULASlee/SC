@@ -42,31 +42,31 @@ jobs:
 
       - name: Restore
         run: |
-          dotnet restore GenCollector/GenCollector.csproj -r win-x86
-          dotnet restore GenDashboard/GenDashboard.csproj
-          dotnet restore GenCollector.Tests/GenCollector.Tests.csproj
-          dotnet restore GenDashboard.Tests/GenDashboard.Tests.csproj
-          dotnet restore source/IoTPlatform/src/IoTPlatform.Core/IoTPlatform.Core.csproj
-          dotnet restore source/IoTPlatform/src/IoTPlatform.Adapters/IoTPlatform.Adapters.csproj
-          dotnet restore source/IoTPlatform/src/IoTPlatform.Host/IoTPlatform.Host.csproj
-          dotnet restore source/IoTPlatform/samples/IoTPlatform.UI.Wpf/IoTPlatform.UI.Wpf.csproj
+          dotnet restore src/Collector/GenCollector/GenCollector.csproj -r win-x86
+          dotnet restore src/Frontend/GenDashboard/GenDashboard.csproj
+          dotnet restore tests/GenCollector.Tests/GenCollector.Tests.csproj
+          dotnet restore tests/GenDashboard.Tests/GenDashboard.Tests.csproj
+          dotnet restore src/Backend/IoTPlatform.Core/IoTPlatform.Core.csproj
+          dotnet restore src/Backend/IoTPlatform.Adapters/IoTPlatform.Adapters.csproj
+          dotnet restore src/Backend/IoTPlatform.Host/IoTPlatform.Host.csproj
+          dotnet restore src/Frontend/IoTPlatform.UI.Wpf/IoTPlatform.UI.Wpf.csproj
           # LnkCollector_src skipped: netcoreapp3.1 EOL + reverse-engineered reference
 
       - name: Build (Treat Warnings As Errors)
         run: |
-          dotnet build GenCollector/GenCollector.csproj -c Release -r win-x86 --self-contained true -p:PlatformTarget=x86 --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
-          dotnet build GenDashboard/GenDashboard.csproj -c Release --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
-          dotnet build GenCollector.Tests/GenCollector.Tests.csproj -c Release -p:PlatformTarget=x86 --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
-          dotnet build GenDashboard.Tests/GenDashboard.Tests.csproj -c Release --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
-          dotnet build source/IoTPlatform/src/IoTPlatform.Core/IoTPlatform.Core.csproj -c Release --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
-          dotnet build source/IoTPlatform/src/IoTPlatform.Adapters/IoTPlatform.Adapters.csproj -c Release --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
-          dotnet build source/IoTPlatform/src/IoTPlatform.Host/IoTPlatform.Host.csproj -c Release --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
-          dotnet build source/IoTPlatform/samples/IoTPlatform.UI.Wpf/IoTPlatform.UI.Wpf.csproj -c Release --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
+          dotnet build src/Collector/GenCollector/GenCollector.csproj -c Release -r win-x86 --self-contained true -p:PlatformTarget=x86 --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
+          dotnet build src/Frontend/GenDashboard/GenDashboard.csproj -c Release --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
+          dotnet build tests/GenCollector.Tests/GenCollector.Tests.csproj -c Release -p:PlatformTarget=x86 --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
+          dotnet build tests/GenDashboard.Tests/GenDashboard.Tests.csproj -c Release --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
+          dotnet build src/Backend/IoTPlatform.Core/IoTPlatform.Core.csproj -c Release --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
+          dotnet build src/Backend/IoTPlatform.Adapters/IoTPlatform.Adapters.csproj -c Release --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
+          dotnet build src/Backend/IoTPlatform.Host/IoTPlatform.Host.csproj -c Release --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
+          dotnet build src/Frontend/IoTPlatform.UI.Wpf/IoTPlatform.UI.Wpf.csproj -c Release --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
 
       - name: Test
         run: |
-          dotnet test GenCollector.Tests/GenCollector.Tests.csproj -c Release --no-build -p:PlatformTarget=x86
-          dotnet test GenDashboard.Tests/GenDashboard.Tests.csproj -c Release --no-build
+          dotnet test tests/GenCollector.Tests/GenCollector.Tests.csproj -c Release --no-build -p:PlatformTarget=x86
+          dotnet test tests/GenDashboard.Tests/GenDashboard.Tests.csproj -c Release --no-build
 
       - name: Generate Coverage Report (L2-B)
         if: always()
@@ -106,8 +106,8 @@ jobs:
 
       - name: Restore
         run: |
-          dotnet restore GenCollector/GenCollector.csproj
-          dotnet restore GenCollector.Tests/GenCollector.Tests.csproj
+          dotnet restore src/Collector/GenCollector/GenCollector.csproj
+          dotnet restore tests/GenCollector.Tests/GenCollector.Tests.csproj
 
       - name: Install Stryker
         run: dotnet tool restore
