@@ -21,7 +21,12 @@ EXEMPT_PREFIXES=(
 FIRST_LINE="$(echo "$COMMIT_MSG" | head -n 1)"
 
 for prefix in "${EXEMPT_PREFIXES[@]}"; do
-    if [[ "$FIRST_LINE" == $prefix* ]]; then
+    # 豁免匹配：commit message 类型 type 字段含豁免前缀关键字（如 "chore" 或 "docs"）即可。
+    # 原架构师设计是精确前缀（如 "chore:"），但 commit 格式常为 "chore(scope): ..."
+    # 用 "type(scope):" 的 type 段作匹配，更宽松且兼容。
+    type_word="${prefix%:}"  # 去掉冒号
+    # 提取 type_word（首段字母数字），匹配 "type_word(" 或 "type_word:" 或纯 "type_word"
+    if [[ "$FIRST_LINE" =~ ^($type_word(\(|\:|[[:space:]]|$)) ]]; then
         exit 0
     fi
 done
