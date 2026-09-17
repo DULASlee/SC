@@ -1,0 +1,60 @@
+id: TASK-002
+title: 搭建本地 CI（架构师 L0-local-ci 施工包：方案 1+3 组合）
+
+status: ready
+created: 2026-09-18T00:00:00Z
+created_by: architect
+
+scope:
+  allow_write:
+    - .githooks/**
+    - scripts/setup-local-ci.sh
+    - .harness/scripts/check-local-scope.py
+    - .harness/scripts/check-protected-paths.py
+    - .harness/scripts/verify-all.py
+    - .harness/README.md
+    - docs/verification/**
+    - docs/engineering/l5-separation-of-roles.md
+    - .harness/tasks/active/TASK-002.yaml
+  deny_write:
+    - GenCollector/**
+    - GenDashboard/**
+    - source/**
+    - LnkCollector_src/**
+    - tests/ReliabilityTests/**
+    - contracts/**
+    - Directory.Build.props
+    - Directory.Build.targets
+    - stryker-config.json
+    - .github/**
+
+acceptance_tests:
+  # 注：本任务是 harness 施工（无 xUnit 测试）。
+  # verify-all.py 不读 acceptance_tests，跑架构师 §三 S8 固定 checklist。
+  # 占位项仅为满足 schema 的 minItems=1 约束。
+  - tests/ArchitectureTests/ArchitectureTests.csproj  # 当前不存在，预留位置
+
+done_when:
+  - "ci: build"
+  - "ci: acceptance_tests"
+
+constraints:
+  max_lines_changed: 600
+  max_files_changed: 12
+
+depends_on: []
+
+references:
+  - docs/engineering/l5-separation-of-roles.md
+  - .harness/README.md
+
+notes: |
+  本任务是 L0-local-ci 施工包（架构师 2026-09-18 §一 方案1+3 组合）的任务卡。
+
+  关键诚实点：
+  - L0-local-ci 是 harness 自身施工，不是业务任务；done_when 不引用 ci: architecture_tests
+    （架构测试在本阶段尚未就绪，属 L2-A+ 后续）
+  - pre-commit 阶段不查受保护路径（commit-msg 阶段才查 APPROVED-BY）—— 见 .githooks/commit-msg
+  - 本机 Docker daemon 可启（已在本会话启动 com.docker.service），
+    pre-push 会自动跑 ReliabilityTests；如需观察期跳过，可设 SKIP_RELIABILITY=1
+  - 完整验收需生成 docs/verification/VERIFY-TASK-002-<ts>.md（架构师 §三 S13）

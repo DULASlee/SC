@@ -22,10 +22,12 @@ VERIFY_DIR = REPO_ROOT / "docs" / "verification"
 
 
 def run(cmd: str, cwd: Path = REPO_ROOT) -> tuple[int, str, str]:
+    # 强制 UTF-8（避免 Windows GBK 翻车——L1-α 与 P0 修复均踩过）
     result = subprocess.run(
         cmd, shell=True, cwd=cwd, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
     )
-    return result.returncode, result.stdout, result.stderr
+    return result.returncode, result.stdout or "", result.stderr or ""
 
 
 def git_info() -> dict:
@@ -60,19 +62,32 @@ def main() -> int:
 
     # 强制 UTF-8 防 Windows GBK 翻车（L1-α 验收记录过）
     lines.append("## 门禁结果\n")
+    # 注：本仓库无 .sln 文件，逐个工程 build/test。
+    # GenCollector 必须 x86（ADR-0003）；其它工程直接 default platform。
+    proj_main="GenCollector/GenCollector.csproj"
+    proj_main_args="-c Release -r win-x86 --self-contained true -p:PlatformTarget=x86"
+    test_main_args="-c Release -p:PlatformTarget=x86"
+    proj_tests="GenCollector.Tests/GenCollector.Tests.csproj"
+    proj_other_tests="GenDashboard.Tests/GenDashboard.Tests.csproj"
+    proj_reliability="tests/ReliabilityTests/ReliabilityTests.csproj"
+    proj_iot="source/IoTPlatform/src/IoTPlatform.Host/IoTPlatform.Host.csproj"
+    proj_iot_args="-c Release"
+
     checks: list[tuple[str, str]] = [
         ("1. 任务卡校验", "python .harness/scripts/validate-task-card.py --all"),
         ("2. 契约一致性", "python scripts/check-contract-consistency.py"),
-        ("3. 编译 + 警告即错误", "dotnet build -c Release /p:TreatWarningsAsErrors=true --nologo -v quiet"),
+        ("3. 编译 + 警告即错误", f"dotnet build {proj_main} {proj_main_args} /p:TreatWarningsAsErrors=true --nologo -v quiet "
+            f"&& dotnet build {proj_other_tests} {proj_iot_args} /p:TreatWarningsAsErrors=true --nologo -v quiet"),
         ("4. 架构测试（条件）",
             "[ -f tests/ArchitectureTests/ArchitectureTests.csproj ] && "
             "dotnet test tests/ArchitectureTests/ArchitectureTests.csproj -c Release --no-build --nologo -v quiet "
             "|| echo 'ArchitectureTests 不存在（跳过）'"),
         ("5. 可靠性工具链（条件）",
-            "[ -d tests/ReliabilityTests ] && "
-            "dotnet test tests/ReliabilityTests/ReliabilityTests.csproj -c Release --no-build --nologo -v quiet "
+            f"[ -f {proj_reliability} ] && "
+            f"dotnet test {proj_reliability} -c Release --no-build --nologo -v quiet "
             "|| echo 'ReliabilityTests 不存在（跳过）'"),
-        ("6. 全测试", "dotnet test -c Release --no-build --nologo -v quiet"),
+        ("6. 全测试", f"dotnet test {proj_tests} {test_main_args} --no-build --nologo -v quiet "
+            f"&& dotnet test {proj_other_tests} {proj_iot_args} --no-build --nologo -v quiet"),
     ]
 
     all_pass = True
