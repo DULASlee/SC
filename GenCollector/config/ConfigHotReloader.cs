@@ -36,7 +36,7 @@ namespace GenCollector.Config
         public Exception Error { get; set; }
         public bool IsRollback { get; set; }
         public string FileName { get; set; } = "";
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public DateTime Timestamp { get; set; } = DateTimeOffset.UtcNow.UtcDateTime;
         public string OldHash { get; set; } = "";
         public string NewHash { get; set; } = "";
         public string Action { get; set; } = "";
@@ -183,7 +183,7 @@ namespace GenCollector.Config
             _pollingTimer.Change(_pollingIntervalMs, _pollingIntervalMs);
             AppendAudit(new ConfigAuditEntry
             {
-                Timestamp = DateTime.UtcNow,
+                Timestamp = DateTimeOffset.UtcNow.UtcDateTime,
                 Action = "watcher_fallback",
                 Message = $"FileSystemWatcher failed, switched to polling every {_pollingIntervalMs}ms: {e.GetException()?.Message}",
                 InstanceId = _instanceId
@@ -282,7 +282,7 @@ namespace GenCollector.Config
 
                         AppendAudit(new ConfigAuditEntry
                         {
-                            Timestamp = DateTime.UtcNow,
+                            Timestamp = DateTimeOffset.UtcNow.UtcDateTime,
                             FileName = fileName,
                             OldHash = oldHash,
                             NewHash = newHash,
@@ -315,7 +315,7 @@ namespace GenCollector.Config
 
                             AppendAudit(new ConfigAuditEntry
                             {
-                                Timestamp = DateTime.UtcNow,
+                                Timestamp = DateTimeOffset.UtcNow.UtcDateTime,
                                 FileName = fileName,
                                 OldHash = oldHash,
                                 NewHash = newHash,
@@ -356,7 +356,7 @@ namespace GenCollector.Config
 
                 AppendAudit(new ConfigAuditEntry
                 {
-                    Timestamp = DateTime.UtcNow,
+                    Timestamp = DateTimeOffset.UtcNow.UtcDateTime,
                     FileName = fileName,
                     Action = "exception",
                     Message = ex.Message,
@@ -499,7 +499,7 @@ namespace GenCollector.Config
             try
             {
                 // Write instance ID + timestamp to lock file
-                var lockContent = $"{_instanceId}|{DateTime.UtcNow:O}";
+                var lockContent = $"{_instanceId}|{DateTimeOffset.UtcNow:O}";
                 File.WriteAllText(_lockFilePath, lockContent);
 
                 // Verify we still hold the lock (no race with another instance that wrote at the same ms)
@@ -535,3 +535,5 @@ namespace GenCollector.Config
         }
     }
 }
+
+

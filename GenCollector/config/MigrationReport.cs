@@ -24,7 +24,7 @@ namespace GenCollector.Config
             {
                 SourceFile = sourceFile,
                 TargetFile = targetFile,
-                MigratedAt = DateTime.UtcNow,
+                MigratedAt = DateTimeOffset.UtcNow.UtcDateTime,
                 Success = true,
                 Message = $"Skipped: {reason}"
             };
@@ -36,7 +36,7 @@ namespace GenCollector.Config
             {
                 SourceFile = sourceFile,
                 TargetFile = targetFile,
-                MigratedAt = DateTime.UtcNow,
+                MigratedAt = DateTimeOffset.UtcNow.UtcDateTime,
                 Success = false,
                 Message = $"Failed: {reason}",
                 Warnings = warnings?.ToList() ?? new List<string>()
@@ -50,7 +50,7 @@ namespace GenCollector.Config
             {
                 SourceFile = sourceFile,
                 TargetFile = targetFile,
-                MigratedAt = DateTime.UtcNow,
+                MigratedAt = DateTimeOffset.UtcNow.UtcDateTime,
                 Success = true,
                 Message = "Migrated successfully",
                 FieldMappings = fieldMappings ?? new Dictionary<string, string>(),

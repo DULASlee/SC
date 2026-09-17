@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using Newtonsoft.Json;
@@ -54,13 +55,14 @@ namespace GenCollector.Core
 
         public void Stop() { foreach (var c in _cts) try { c.Cancel(); } catch { } }
 
+        [SuppressMessage("Usage", "RS0030:Do not use banned Thread.Sleep", Justification = "ADR-001: Hardware polling thread requires synchronous sleep; see docs/adr/ADR-001-Collector-Thread-Sleep-Exemption.md")]
         void RunDevice(DeviceConfig dev, CancellationToken token)
         {
             var driver = DriverFactory.Create(dev.Protocol, _simulate);
             bool ok = driver.Connect(dev, _setting);
             Log($"设备 {dev.Id}({dev.Protocol}) 驱动[{driver.DriverName}] 连接={(ok ? "成功" : "失败")}");
 
-            var lastPub = new Dictionary<string, DateTime>();
+            var lastPub = new Dictionary<string, DateTimeOffset>();
             while (!token.IsCancellationRequested)
             {
                 try
@@ -71,11 +73,11 @@ namespace GenCollector.Core
                     foreach (var g in _groups)
                     {
                         int interval = g.Timer > 0 ? g.Timer * 1000 : 20000;
-                        if (!lastPub.ContainsKey(g.Id)) lastPub[g.Id] = DateTime.MinValue;
-                        if ((DateTime.Now - lastPub[g.Id]).TotalMilliseconds < interval) continue;
+                        if (!lastPub.ContainsKey(g.Id)) lastPub[g.Id] = DateTimeOffset.MinValue;
+                        if ((DateTimeOffset.UtcNow - lastPub[g.Id]).TotalMilliseconds < interval) continue;
 
                         var vars = allVars?.FindAll(x => x.Enabled && x.Group == g.Id);
-                        lastPub[g.Id] = DateTime.Now;
+                        lastPub[g.Id] = DateTimeOffset.UtcNow;
                         if (vars == null || vars.Count == 0) continue;
 
                         var data = driver.ReadVariables(vars);
@@ -98,7 +100,7 @@ namespace GenCollector.Core
 
         string BuildPayload(DeviceConfig dev, List<VarInfo> vars, Dictionary<string, List<double>> data)
         {
-            long ts = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds;
+            long ts = (long)(DateTimeOffset.UtcNow - new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero)).TotalMilliseconds;
             var props = new List<object>();
             foreach (var v in vars)
             {
@@ -116,6 +118,6 @@ namespace GenCollector.Core
             return JsonConvert.SerializeObject(new { properties = props });
         }
 
-        void Log(string m) { OnLog?.Invoke($"[{DateTime.Now:HH:mm:ss}] {m}"); }
+        void Log(string m) { OnLog?.Invoke($"[{DateTimeOffset.UtcNow:HH:mm:ss}] {m}"); }
     }
 }

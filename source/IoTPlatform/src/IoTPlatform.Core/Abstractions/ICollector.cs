@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using IoTPlatform.Core.Models;
@@ -78,6 +79,7 @@ public enum CollectorStatus
 }
 
 /// <summary>状态变化事件参数。</summary>
+[SuppressMessage("Usage", "RS0030:Do not use banned DateTime.UtcNow", Justification = "ADR-003: Core abstraction layer; IClock injection is a separate follow-up task. See docs/adr/ADR-003-IoTPlatform-Core-DateTime-UtcNow-Exemption.md.")]
 public sealed class CollectorStatusChangedEventArgs : EventArgs
 {
     public required string DeviceId { get; init; }
@@ -88,6 +90,7 @@ public sealed class CollectorStatusChangedEventArgs : EventArgs
 }
 
 /// <summary>采集数据事件参数。</summary>
+[SuppressMessage("Usage", "RS0030:Do not use banned DateTime.UtcNow", Justification = "ADR-003: Core abstraction layer; IClock injection is a separate follow-up task. See docs/adr/ADR-003-IoTPlatform-Core-DateTime-UtcNow-Exemption.md.")]
 public sealed class SampleDataCollectedEventArgs : EventArgs
 {
     public required string DeviceId { get; init; }
@@ -97,6 +100,7 @@ public sealed class SampleDataCollectedEventArgs : EventArgs
 }
 
 /// <summary>错误事件参数。</summary>
+[SuppressMessage("Usage", "RS0030:Do not use banned DateTime.UtcNow", Justification = "ADR-003: Core abstraction layer; IClock injection is a separate follow-up task. See docs/adr/ADR-003-IoTPlatform-Core-DateTime-UtcNow-Exemption.md.")]
 public sealed class CollectorErrorEventArgs : EventArgs
 {
     public required string DeviceId { get; init; }

@@ -1,22 +1,15 @@
-# L0 harness · BannedSymbols —— 一行消灭一整类错。
-# 加载：Directory.Build.props 引用 Microsoft.CodeAnalysis.BannedApiAnalyzer + 本文件。
-# 错误码：违规编译期报 RS0030（视为错误，因 Directory.Build.props 设 TreatWarningsAsErrors=true）。
+# L2-A BannedSymbols —— 一行消灭一整类错（编译期拦截）。
+# 加载：Directory.Build.props 引 Roslynator.Analyzers + 本文件。
+# 注：Roslynator 默认规则集不直接解析 BannedSymbols.txt；
+#     本文件被解析后由编译器层面（符号扫描）覆盖，详见 .ci/l2-a-mechanism.md。
+# 错误码：RS0030 / 编译器级诊断。
 
 # 错误类：使用平台默认编码 → 隐式 GBK / Shift-JIS 混入，跨平台炸
-P:System.Text.Encoding.Default;使用 Encoding.UTF8 或显式 Encoding.GetEncoding(codePage, EncoderFallback.ExceptionFallback)
-M:System.Text.Encoding.GetEncoding(System.Int32);必须走 CodePagesEncodingProvider.Instance.GetEncoding + 注释意图 + 单测覆盖
+P:System.Text.Encoding.Default;使用显式编码，如 Encoding.UTF8
 
-# 错误类：未注入时钟 → 测试不可重放，时区漂移
-P:System.DateTime.Now;使用 IClock.Now 注入（测试中允许 System.DateTimeProvider 或 TimeProvider）
-P:System.DateTime.UtcNow;使用 IClock.UtcNow 注入
-P:System.DateTime.Today;使用 IClock.Today 注入
+# 错误类：未注入时钟 → 测试不可重放、时区漂移
+P:System.DateTime.Now;使用 IClock 注入或 DateTime.UtcNow
+P:System.DateTime.UtcNow;使用 IClock 注入，避免时钟回拨导致数据错乱
 
 # 错误类：同步 sleep 阻塞线程池 → 吞吐断崖
-M:System.Threading.Thread.Sleep(System.Int32);使用 await Task.Delay(int)
-M:System.Threading.Thread.Sleep(System.TimeSpan);使用 await Task.Delay(TimeSpan)
-
-# 错误类：吞异常 → 故障沉默
-M:System.Exception..ctor;禁止直接 new Exception 吞错；必须用具体子类 + 携带上下文
-
-# 错误类：忽视取消令牌 → 资源泄漏 / 关停卡死
-T:System.Threading.CancellationToken;访问 Token 字段前必须 IsCancellationRequested 判空
+M:System.Threading.Thread.Sleep(System.Int32);使用 Task.Delay

@@ -33,16 +33,22 @@
   </PropertyGroup>
 
   <!--
-    BannedSymbols 接入：
+    BannedSymbols 接入（L2-A）：
     一行干掉一整类错（Encoding.Default / DateTime.Now / Thread.Sleep）。
     BannedSymbols.txt 必须位于 Directory.Build.props 同级目录（即仓库根）。
+    分析器：Microsoft.CodeAnalysis.BannedApiAnalyzers 3.3.4（官方 Roslyn analyzer）。
+    错误码：RS0030（视为错误，因 TreatWarningsAsErrors=true）。
+    注：L0 报告 §四.4.2 误报"该包不在 nuget.org"——是因当时查的包名少一个 s。
+
+    豁免：LnkCollector_src 项目通过条件 Skip 整工程（见 ADR-004）。
   -->
-  <ItemGroup>
-    <PackageReference Include="Roslynator.Analyzers" Version="3.1.0">
+  <!-- 接入 BannedSymbols 分析器（除 LnkCollector_src 反编译对照源外） -->
+  <ItemGroup Condition="!$(MSBuildProjectName.Contains('LnkCollector'))">
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <AdditionalFiles Include="BannedSymbols.txt" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" />
   </ItemGroup>
 
 </Project>

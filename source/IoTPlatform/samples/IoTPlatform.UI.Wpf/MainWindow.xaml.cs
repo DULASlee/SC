@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,7 +33,7 @@ public partial class MainWindow : Window, ICollectorView
     {
         Dispatcher.Invoke(() =>
         {
-            LogBox.AppendText($"[{DateTime.Now:HH:mm:ss}] {line}\n");
+            LogBox.AppendText($"[{DateTimeOffset.UtcNow:HH:mm:ss}] {line}\n");
             LogBox.ScrollToEnd();
         });
     }

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace IoTPlatform.Core.Models;
 
@@ -67,6 +68,7 @@ public enum TagType
 /// <summary>
 /// 单个标签的读取结果。
 /// </summary>
+[SuppressMessage("Usage", "RS0030:Do not use banned DateTime.UtcNow", Justification = "ADR-003: Core abstraction layer; IClock injection is a separate follow-up task. See docs/adr/ADR-003-IoTPlatform-Core-DateTime-UtcNow-Exemption.md.")]
 public sealed class TagReadResult
 {
     /// <summary>标签定义（对应采集的哪个标签）。</summary>

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using GenCollector.Core;
@@ -7,6 +8,7 @@ namespace GenCollector
 {
     static class Program
     {
+        [SuppressMessage("Usage", "RS0030:Do not use banned Thread.Sleep", Justification = "ADR-002: Main is a synchronous console entry point; blocking on Timeout.Infinite is the standard pattern. See docs/adr/ADR-002-Program-Main-Thread-Sleep-Exemption.md.")]
         static void Main(string[] args)
         {
             string configDir = "config";

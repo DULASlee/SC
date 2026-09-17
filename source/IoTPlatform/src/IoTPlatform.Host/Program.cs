@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -141,7 +141,7 @@ public static class Program
     private sealed class ConsoleView : ICollectorView
     {
         private readonly ILogger _logger;
-        private readonly Dictionary<string, DateTime> _lastSample = new();
+        private readonly Dictionary<string, DateTimeOffset> _lastSample = new();
 
         public ConsoleView(ILogger logger) => _logger = logger;
 
@@ -159,8 +159,8 @@ public static class Program
         public void RenderSampleData(SampleDataCollectedEventArgs args)
         {
             if (_lastSample.TryGetValue(args.DeviceId, out var last) &&
-                (DateTime.UtcNow - last).TotalSeconds < 5) return;
-            _lastSample[args.DeviceId] = DateTime.UtcNow;
+                (DateTimeOffset.UtcNow - last).TotalSeconds < 5) return;
+            _lastSample[args.DeviceId] = DateTimeOffset.UtcNow;
             var ok = args.Results.Count(r => r.IsSuccess);
             var fail = args.Results.Count - ok;
             _logger.LogInformation("[{DeviceId}] sampled {Ok}/{Total} in {Ms:F1}ms",

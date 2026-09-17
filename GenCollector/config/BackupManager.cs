@@ -24,7 +24,7 @@ namespace GenCollector.Config
         {
             lock (_lock)
             {
-                var timestamp = DateTime.UtcNow.Ticks.ToString();
+                var timestamp = DateTimeOffset.UtcNow.UtcTicks.ToString();
                 var guid = Guid.NewGuid().ToString("N");
                 var backupName = $"{fileName}.{timestamp}.{guid}.bak";
                 var backupPath = Path.Combine(_backupDir, backupName);

@@ -84,7 +84,7 @@ namespace GenCollector.Config
                 try
                 {
                     File.WriteAllText(migrationMarkerPath,
-                        $"{{\"migratedAt\":\"{DateTime.UtcNow:O}\",\"source\":\"INI\"}}");
+                        $"{{\"migratedAt\":\"{DateTimeOffset.UtcNow:O}\",\"source\":\"INI\"}}");
                 }
                 catch
                 {
