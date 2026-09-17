@@ -44,6 +44,8 @@ $RECYCLE.BIN/
 TestResults/
 *.trx
 coverage/
+coveragereport/
+StrykerOutput/
 *.coverage
 *.coveragexml
 
