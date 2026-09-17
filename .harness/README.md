@@ -75,6 +75,77 @@ CI 自动运行：
 5. **单次变更 ≤ 300 行 / 10 文件。** 超了拆分任务。
 6. **任务卡只能由架构师创建或修改。** 执行者对 .harness/ 无写权限。
 
+## 任务卡范围设计原则
+
+L3 的核心价值是"最小上下文加载"——**每个任务只加载自己需要的文件，不加载历史或无关内容**。这是 L3 解决"上下文丢失"问题的具体落地。
+
+### 硬性上限
+
+| 指标 | 推荐值 | 硬性上限 |
+|---|---|---|
+| `start-task.py` 输出的上下文文件数 | ≤ 20 | 50（`start-task.py` 会打印 `[WARN]`） |
+| 单任务最大文件数（`constraints.max_files_changed`） | 10 | 300 |
+| 单任务最大行数（`constraints.max_lines_changed`） | 100 | 300 |
+
+### 拆分规则
+
+**单个任务卡 allow_write 应覆盖 ≤ 20 个文件**。超过则按以下原则拆分为多个任务卡：
+
+1. **按文件类型拆分**：测试 / 实现 / 配置 拆开
+2. **按模块边界拆分**：A 模块一个任务，B 模块另一个任务
+3. **按变更范围拆分**：核心改动一个任务，附属清理一个任务
+4. **按依赖关系拆分**：被依赖的先做，依赖的后做（用 `depends_on` 字段串联）
+
+### 路径示例
+
+✅ **好**：
+```yaml
+scope:
+  allow_write:
+    - GenCollector/Core/EdgeBuffer.cs      # 单文件
+  deny_write:
+    - GenCollector.Tests/**
+```
+
+✅ **可接受**：
+```yaml
+scope:
+  allow_write:
+    - GenCollector/Core/EdgeBuffer.cs
+    - GenCollector/Core/EdgeBufferExtensions.cs   # 2 文件，紧耦合
+    - GenCollector.Tests/Core/EdgeBufferTests.cs
+```
+
+❌ **需拆分**：
+```yaml
+scope:
+  allow_write:
+    - GenCollector/**        # 整个生产代码项目 → 必须拆分
+    - GenCollector.Tests/**   # 整个测试项目 → 必须拆分
+    - .harness/**             # 任务协议 → 架构师专属
+```
+
+### 路径精度匹配
+
+`allow_write: [GenCollector/Core/**]` 与 `allow_write: [GenCollector/Core/EdgeBuffer.cs]` 粒度不同。架构师应**用最窄粒度**——粒度越窄，Agent 注意力越集中，越不容易越界。
+
+### 防御性检查（start-task.py 内置）
+
+`start-task.py` 在生成上下文时会统计文件数：
+- ≤ 20：不警告
+- 21-50：`[INFO] 上下文文件数 N > 20，已超过 L3 推荐值。考虑拆分任务卡。`
+- \> 50：`[WARN] 上下文文件数 N > 50，可能破坏 L3 最小上下文设计（推荐 ≤ 20）`
+
+**警告不阻断**——架构师决定是否拆分。但当看到 WARN 时，必须严肃考虑拆任务。
+
+### 历史教训：P0 修复
+
+L3 完成后第一次跑 `start-task.py TASK-001` 报告 **295 个文件**——违反"最小上下文加载"原则。
+
+**根因**：脚本遍历文件系统时未排除 `.gitignore` 列表的所有目录（`bin/`、`obj/`、`coverage/`、`StrykerOutput/` 等），导致 `GenCollector.Tests/**` 把测试工程 bin/obj 下 200+ 个 dll/config 文件全收进来。
+
+**修复**：脚本现在读 `.gitignore` 解析 + 硬编码最小集双保险。295 → 6。
+
 ## 已知局限
 
 - **CODEOWNERS 占位符**：`@org/architecture-leads` 是占位符，部署到具体仓库时**必须替换为真实 GitHub team 或 user handle**。否则 CODEOWNERS 不生效。
