@@ -36,4 +36,43 @@ if ! echo "$FIRST_LINE" | grep -qE "TASK-[0-9]{3,}"; then
     exit 1
 fi
 
+# 受保护路径的 APPROVED-BY 检查（架构师 S7）
+# 注：commit-msg 阶段，git staged 变更可查
+PROTECTED_PATTERNS=(
+    "tests/**"
+    "contracts/**"
+    ".harness/**"
+    ".githooks/**"
+    ".github/**"
+    "Directory.Build.props"
+    "Directory.Build.targets"
+    "stryker-config.json"
+)
+
+STAGED_FILES=$(git diff --cached --name-only)
+
+PROTECTED_HIT=""
+for f in $STAGED_FILES; do
+    for pattern in "${PROTECTED_PATTERNS[@]}"; do
+        case "$f" in
+            $pattern)
+                PROTECTED_HIT="$PROTECTED_HIT $f"
+                ;;
+        esac
+    done
+done
+
+if [ -n "$PROTECTED_HIT" ]; then
+    if ! echo "$COMMIT_MSG" | grep -qE "\[APPROVED-BY:[[:space:]]*\S+\]"; then
+        echo "[FAIL] 触碰受保护路径，必须含 [APPROVED-BY: <name>] 标记：" >&2
+        for f in $PROTECTED_HIT; do
+            echo "  - $f" >&2
+        done
+        echo "       修复方式：commit message 加 [APPROVED-BY: architect-name]" >&2
+        echo "       或豁免前缀：chore:/docs:" >&2
+        echo "       或架构师本人设 SKIP_PROTECTED_CHECK=1" >&2
+        exit 1
+    fi
+fi
+
 exit 0

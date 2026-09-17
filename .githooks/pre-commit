@@ -24,7 +24,8 @@ python .harness/scripts/check-local-scope.py || fail "scope 检查失败"
 python scripts/check-contract-consistency.py || fail "契约一致性失败"
 
 # 5. 编译 + 警告即错误
-# 注：本仓库无 .sln 文件，逐个工程 build
+# 注：本仓库无 .sln 文件，逐个工程 build。
+#     用 bash 数组传参（避免行末 \ 续行吞参数）。
 PROJECTS=(
     "GenCollector/GenCollector.csproj"
     "GenDashboard/GenDashboard.csproj"
@@ -36,15 +37,13 @@ PROJECTS=(
     "source/IoTPlatform/samples/IoTPlatform.UI.Wpf/IoTPlatform.UI.Wpf.csproj"
 )
 for proj in "${PROJECTS[@]}"; do
-    if [ -f "$proj" ]; then
-        if [[ "$proj" == GenCollector* ]]; then
-            dotnet build "$proj" -c Release -r win-x86 --self-contained true -p:PlatformTarget=x86 /p:TreatWarningsAsErrors=true --nologo -v quiet \
-                || fail "编译失败：$proj"
-        else
-            dotnet build "$proj" -c Release /p:TreatWarningsAsErrors=true --nologo -v quiet \
-                || fail "编译失败：$proj"
-        fi
+    [ -f "$proj" ] || continue
+    if [[ "$proj" == GenCollector* ]]; then
+        args=( "$proj" -c Release -r win-x86 --self-contained true "-p:PlatformTarget=x86" "-p:TreatWarningsAsErrors=true" --nologo -v quiet )
+    else
+        args=( "$proj" -c Release "-p:TreatWarningsAsErrors=true" --nologo -v quiet )
     fi
+    dotnet build "${args[@]}" || fail "编译失败：$proj"
 done
 
 # 6. 架构测试（如果存在）

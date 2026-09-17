@@ -13,15 +13,13 @@ echo "=== pre-push 门禁 ==="
 
 # 1. 全测试（仓库无 .sln，逐个工程）
 for proj in GenCollector.Tests/GenCollector.Tests.csproj GenDashboard.Tests/GenDashboard.Tests.csproj tests/ReliabilityTests/ReliabilityTests.csproj; do
-    if [ -f "$proj" ]; then
-        if [[ "$proj" == GenCollector* ]]; then
-            dotnet test "$proj" -c Release -p:PlatformTarget=x86 --no-build --nologo -v quiet \
-                || fail "全测试失败：$proj"
-        else
-            dotnet test "$proj" -c Release --no-build --nologo -v quiet \
-                || fail "全测试失败：$proj"
-        fi
+    [ -f "$proj" ] || continue
+    if [[ "$proj" == GenCollector* ]]; then
+        args=( "$proj" -c Release "-p:PlatformTarget=x86" --no-build --nologo -v quiet )
+    else
+        args=( "$proj" -c Release --no-build --nologo -v quiet )
     fi
+    dotnet test "${args[@]}" || fail "全测试失败：$proj"
 done
 
 # 2. 覆盖率差分（如果存在脚本）
@@ -41,7 +39,7 @@ fi
 # 4. 可靠性工具链（仅在 Docker daemon 可用时跑）
 if command -v docker > /dev/null 2>&1 && docker info > /dev/null 2>&1; then
     info "检测到 Docker daemon，运行可靠性工具链"
-    dotnet test tests/ReliabilityTests/ReliabilityTests.csproj -c Release --nologo -v quiet \
+    dotnet test tests/ReliabilityTests/ReliabilityTests.csproj -c Release --no-build --nologo -v quiet \
         || warn "可靠性工具链未通过（观察期）"
 else
     info "本地无 Docker daemon，跳过 ReliabilityTests（架构师 §五 允许降级）"

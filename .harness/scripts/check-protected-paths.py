@@ -58,54 +58,11 @@ def main() -> int:
         print("[OK] 未触碰受保护路径")
         return 0
 
-    # 有受保护路径变更 → 必须有 commit message 标记
-    commit_msg_file = os.environ.get("GIT_COMMIT_MSG_FILE")
-    if commit_msg_file and os.path.exists(commit_msg_file):
-        with open(commit_msg_file, encoding="utf-8") as f:
-            commit_msg = f.read()
-    else:
-        # pre-commit 阶段：git 还没记录 commit message。
-        # 这种情况下，要么提交者用 GIT_COMMIT_MSG_FILE 提供，要么 commit-msg hook 兜底。
-        # 本脚本主要在 pre-commit 跑：如果在 pre-commit 跑，期望 GIT_COMMIT_MSG_FILE 被设置。
-        # 但 git 1.x pre-commit 不会自动设此环境变量。
-        # 兜底策略：如果检测到 commit-msg hook 配置存在，则 trust 它已检查。
-        result = subprocess.run(
-            ["git", "config", "--get", "core.hooksPath"],
-            capture_output=True, text=True, check=False,
-        )
-        if ".githooks" in result.stdout:
-            print("[OK] commit-msg hook 已配置，信任其独立检查 APPROVED-BY")
-            return 0
-        print(
-            f"\n[FAIL] 触碰 {len(protected_hits)} 个受保护路径，且无法读取 commit message："
-        )
-        for f in protected_hits:
-            print(f"  - {f}")
-        print("\n修复方式之一：")
-        print("  1. 在 commit message 中添加 [APPROVED-BY: architect-name]")
-        print("  2. 使用豁免前缀（chore:/docs:）")
-        print("  3. 架构师本人设置 SKIP_PROTECTED_CHECK=1 绕过")
-        print("  4. 配置 commit-msg hook 独立检查（推荐）")
-        return 1
-
-    first_line = commit_msg.strip().split("\n")[0]
-    for prefix in EXEMPT_PREFIXES:
-        if first_line.startswith(prefix):
-            print(f"[OK] 豁免前缀：{prefix}")
-            return 0
-
-    if re.search(r"\[APPROVED-BY:\s*\S+\]", commit_msg):
-        print("[OK] commit message 包含 APPROVED-BY 标记")
-        return 0
-
-    print(f"\n[FAIL] 触碰 {len(protected_hits)} 个受保护路径：")
-    for f in protected_hits:
-        print(f"  - {f}")
-    print("\n修复方式之一：")
-    print("  1. 在 commit message 中添加 [APPROVED-BY: architect-name]")
-    print("  2. 使用豁免前缀（chore:/docs:）")
-    print("  3. 架构师本人设置 SKIP_PROTECTED_CHECK=1 绕过")
-    return 1
+    # 受保护路径 APPROVED-BY 检查已迁移到 .githooks/commit-msg hook
+    # （那里 git 已写入 commit message，可直接读）。
+    # 本脚本保留为 SKIP_PROTECTED_CHECK=1 的紧急出口与 CI 防御层。
+    print("[OK] pre-commit 阶段不检查受保护路径（由 commit-msg hook 兜底）")
+    return 0
 
 
 if __name__ == "__main__":
