@@ -172,3 +172,37 @@ jobs:
         env:
           PR_DESCRIPTION: ${{ github.event.pull_request.body }}
         run: python .harness/scripts/check-pr-scope.py --base origin/${{ github.base_ref }}
+
+  # ============================================
+  # L4-A 工具链烟雾测试（可靠性测试骨架）
+  # ============================================
+  # 注：当前烟雾测试只验证 Testcontainers 4.x + Mosquitto + Toxiproxy +
+  #     FluentAssertions 工具链的"类型可加载 + 编译通过"（不实际启动 Docker 容器）。
+  #     真实启动容器留给 L4-B+ 任务卡（需要 CI runner 有 Docker daemon）。
+  reliability-toolchain:
+    name: L4-A Reliability Toolchain Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore tests/ReliabilityTests/ReliabilityTests.csproj
+
+      - name: Build (Treat Warnings As Errors)
+        run: dotnet build tests/ReliabilityTests/ReliabilityTests.csproj -c Release --no-restore /p:TreatWarningsAsErrors=true /p:EnforceCodeStyleInBuild=true
+
+      - name: Run Toolchain Smoke Tests
+        run: dotnet test tests/ReliabilityTests/ReliabilityTests.csproj -c Release --no-build --logger "trx;LogFileName=reliability-toolchain.trx"
+
+      - name: Upload Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reliability-toolchain-test-report
+          path: tests/ReliabilityTests/TestResults/**/reliability-toolchain.trx
+          if-no-files-found: warn
