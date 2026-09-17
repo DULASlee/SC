@@ -1,0 +1,537 @@
+asyncapi: 3.0.0
+info:
+  title: Industrial IoT Platform - Realtime API
+  version: 1.0.0
+  description: |
+    WebSocket and SSE realtime channels for the industrial IoT platform.
+
+    ## Overview
+    - **GenCollector** (CNC/PLC采集器) sends MQTT data
+    - **Eclipse Ditto** provides device twin management
+    - **Apache IoTDB** stores time-series data
+    - **API Gateway/BFF** serves Avalonia desktop clients and web frontends
+
+    ## Transport Options
+    - **WebSocket** (primary): Full-duplex, recommended for Avalonia clients
+    - **SSE** (alternative): Simpler firewall-friendly option
+
+    ## Related Documentation
+    - Data models: `data-models.md`
+    - MQTT topics: `mqtt-topics.md`
+  contact:
+    name: Platform Team
+    email: platform@example.com
+
+servers:
+  production:
+    host: api.platform.example.com
+    protocol: wss
+    pathname: /realtime
+    description: Production server
+    security:
+      - bearerAuth: []
+  staging:
+    host: api-staging.platform.example.com
+    protocol: wss
+    pathname: /realtime
+    description: Staging server
+
+defaultContentType: application/json
+
+channels:
+  # ============================================================
+  # WebSocket Channel (Primary for Avalonia clients)
+  # ============================================================
+  client.subscribe.data:
+    address: client.subscribe.data
+    description: |
+      Client subscribes to realtime device variable updates.
+
+      Flow: Client -> Server
+      1. Client connects with Bearer token
+      2. Client sends subscription request specifying deviceIds
+      3. Server pushes realtime variable updates as they arrive from MQTT
+    messages:
+      ClientSubscribeData:
+        $ref: '#/components/messages/ClientSubscribeData'
+    send:
+      - message: ClientSubscribeData
+    receive:
+      - $ref: '#/components/messages/ServerPushData'
+    bindings:
+      ws:
+        bindingVersion: 0.3.0
+        query:
+          type: object
+          properties:
+            deviceIds:
+              type: array
+              items:
+                type: string
+              description: List of device IDs to subscribe
+              examples:
+                - ["CNC04", "DHH02"]
+            variables:
+              type: array
+              items:
+                type: string
+              description: Optional filter for specific variables
+              examples:
+                - ["WorkTime", "RunStatus"]
+        connectionLimits:
+          maxConnections: 10000
+
+  server.push.data:
+    address: server.push.data
+    description: |
+      Server pushes realtime variable updates to subscribed clients.
+
+      Flow: Server -> Client
+      Each message corresponds to a variable value change from GenCollector via MQTT.
+    messages:
+      ServerPushData:
+        $ref: '#/components/messages/ServerPushData'
+    receive:
+      - message: ServerPushData
+    send:
+      - $ref: '#/components/messages/ClientSubscribeData'
+
+  server.push.alarm:
+    address: server.push.alarm
+    description: |
+      Server pushes alarm notifications to clients.
+
+      Flow: Server -> Client
+      Alarms are triggered by rule evaluation when variable values cross thresholds.
+    messages:
+      ServerPushAlarm:
+        $ref: '#/components/messages/ServerPushAlarm'
+
+  server.push.andon:
+    address: server.push.andon
+    description: |
+      Server pushes andon (安灯) status updates to clients.
+
+      Flow: Server -> Client
+      Andon status aggregates the production line status from all connected devices.
+    messages:
+      ServerPushAndon:
+        $ref: '#/components/messages/ServerPushAndon'
+
+  # ============================================================
+  # SSE Channels (Alternative for web clients/firewall scenarios)
+  # ============================================================
+  sse.alarms:
+    address: /sse/alarms
+    description: |
+      Server-Sent Events stream of alarm events.
+
+      - Endpoint: GET /sse/alarms
+      - Auth: Bearer token in Authorization header
+      - Content-Type: text/event-stream
+    messages:
+      SSEAlarmEvent:
+        $ref: '#/components/messages/ServerPushAlarm'
+    bindings:
+      http:
+        bindingVersion: 0.3.0
+        type: server
+        method: GET
+        query:
+          type: object
+          properties:
+            severity:
+              type: array
+              items:
+                type: string
+                enum: [info, warning, error, critical]
+              description: Filter by severity levels
+            deviceId:
+              type: string
+              description: Filter by device ID
+
+  sse.andon:
+    address: /sse/andon
+    description: |
+      Server-Sent Events stream of andon status.
+
+      - Endpoint: GET /sse/andon
+      - Auth: Bearer token in Authorization header
+      - Content-Type: text/event-stream
+    messages:
+      SSEAndonEvent:
+        $ref: '#/components/messages/ServerPushAndon'
+    bindings:
+      http:
+        bindingVersion: 0.3.0
+        type: server
+        method: GET
+        query:
+          type: object
+          properties:
+            lineId:
+              type: string
+              description: Filter by line ID
+
+# ============================================================
+# Security Scheme
+# ============================================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from authentication service.
+        For WebSocket: passed as connection parameter `token`.
+        For SSE: passed in Authorization header `Bearer <token>`.
+
+# ============================================================
+# Message Schemas
+# ============================================================
+  messages:
+    ClientSubscribeData:
+      name: ClientSubscribeData
+      title: Subscribe to Device Data
+      description: |
+        Client -> Server: Subscribe to realtime variable updates for specified devices.
+
+        Reference: data-models.md Section 2 (Variable Model) and Section 5 (Sampling Data Model)
+      payload:
+        type: object
+        required:
+          - action
+          - deviceIds
+        properties:
+          action:
+            type: string
+            enum: [subscribe, unsubscribe]
+            description: Subscribe or unsubscribe action
+          deviceIds:
+            type: array
+            items:
+              type: string
+            description: List of device IDs to subscribe/unsubscribe
+            minItems: 1
+            maxItems: 100
+          variables:
+            type: array
+            items:
+              type: string
+            description: Optional filter for specific variable names
+          requestId:
+            type: string
+            description: Client-side correlation ID for request/response matching
+      examples:
+        - action: subscribe
+          deviceIds: ["CNC04", "DHH02"]
+          variables: ["WorkTime", "RunStatus"]
+          requestId: "req-123"
+
+    ServerPushData:
+      name: ServerPushData
+      title: Realtime Variable Update
+      description: |
+        Server -> Client: Push of realtime variable value update.
+
+        Reference: data-models.md Section 5 (Sampling Data Model)
+        - deviceId, variable, value, quality, timestamp (UTC)
+      payload:
+        $ref: '#/components/schemas/DataUpdate'
+      examples:
+        - payload:
+            deviceId: CNC04
+            variable: WorkTime
+            value: 12345.6
+            quality: good
+            timestamp: 1726588800000
+
+    ServerPushAlarm:
+      name: ServerPushAlarm
+      title: Alarm Notification
+      description: |
+        Server -> Client: Push of alarm event notification.
+
+        Reference: data-models.md Section 4 (Alarm Event Model)
+        - alarmId, severity, status, triggeredAt, deviceId, variable, threshold
+      payload:
+        $ref: '#/components/schemas/AlarmEvent'
+      examples:
+        - payload:
+            alarmId: alm-uuid-xxxx
+            deviceId: CNC04
+            variableId: SpindleTemp
+            severity: error
+            status: active
+            message: "主轴温度超过阈值 80°C，当前值 85°C"
+            triggerValue: 85.0
+            threshold:
+              operator: ">"
+              value: 80
+            triggeredAt: 1726588800000
+
+    ServerPushAndon:
+      name: ServerPushAndon
+      title: Andon Status Update
+      description: |
+        Server -> Client: Push of andon status update.
+
+        Reference: data-models.md Section 6 (Andon State Model)
+        - lineId, status (green/yellow/red/blue), reason, updatedAt
+      payload:
+        $ref: '#/components/schemas/AndonStatus'
+      examples:
+        - payload:
+            lineId: line-01
+            lineName: "1号产线"
+            status: alert
+            devices:
+              - deviceId: CNC04
+                status: running
+                alertCode: TEMP_HIGH
+                alertMessage: "主轴温度告警"
+            updatedAt: 1726588800000
+
+# ============================================================
+# Schema Definitions
+# ============================================================
+  schemas:
+    DataUpdate:
+      name: DataUpdate
+      title: Realtime Data Update
+      description: |
+        Data model for realtime variable updates.
+        Reference: data-models.md Section 5 (Sampling Data Model)
+      type: object
+      required:
+        - deviceId
+        - variable
+        - value
+        - quality
+        - timestamp
+      properties:
+        deviceId:
+          type: string
+          description: Device identifier (matches Ditto thingId namespace:deviceId format)
+          example: CNC04
+        variable:
+          type: string
+          description: Variable name (matches var_info_*.ini definitions)
+          example: WorkTime
+        value:
+          oneOf:
+            - type: number
+            - type: string
+            - type: boolean
+          description: Variable value (dataType per variable definition)
+          example: 12345.6
+        quality:
+          type: string
+          enum: [good, bad, uncertain]
+          description: Data quality indicator (maps to IoTDB quality measurement)
+          example: good
+        timestamp:
+          type: integer
+          format: int64
+          description: UTC milliseconds since epoch
+          example: 1726588800000
+
+    AlarmEvent:
+      name: AlarmEvent
+      title: Alarm Event
+      description: |
+        Data model for alarm events.
+        Reference: data-models.md Section 4 (Alarm Event Model)
+      type: object
+      required:
+        - alarmId
+        - deviceId
+        - variableId
+        - severity
+        - status
+        - triggeredAt
+      properties:
+        alarmId:
+          type: string
+          description: Unique alarm identifier
+          example: alm-uuid-xxxx
+        deviceId:
+          type: string
+          description: Device identifier
+          example: CNC04
+        collectorId:
+          type: string
+          description: Collector identifier
+          example: CNC04
+        variableId:
+          type: string
+          description: Variable that triggered the alarm
+          example: SpindleTemp
+        severity:
+          type: string
+          enum: [info, warning, error, critical]
+          description: |
+            Alarm severity:
+            - info: 提示信息 (blue)
+            - warning: 警告 (yellow)
+            - error: 错误 (orange)
+            - critical: 严重停机 (red)
+          example: error
+        status:
+          type: string
+          enum: [active, acknowledged, resolved]
+          description: Alarm lifecycle status
+          example: active
+        message:
+          type: string
+          description: Human-readable alarm description
+          example: "主轴温度超过阈值 80°C，当前值 85°C"
+        triggerValue:
+          type: number
+          description: Value that triggered the alarm
+          example: 85.0
+        threshold:
+          type: object
+          properties:
+            operator:
+              type: string
+              enum: [">", "<", ">=", "<=", "==", "!="]
+              description: Comparison operator
+            value:
+              type: number
+              description: Threshold value
+        triggeredAt:
+          type: integer
+          format: int64
+          description: UTC milliseconds when alarm was triggered
+          example: 1726588800000
+        acknowledgedAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: UTC milliseconds when alarm was acknowledged
+        acknowledgedBy:
+          type: string
+          nullable: true
+          description: User who acknowledged the alarm
+        resolvedAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: UTC milliseconds when alarm was resolved
+        comment:
+          type: string
+          nullable: true
+          description: Optional comment on alarm
+
+    AndonStatus:
+      name: AndonStatus
+      title: Andon Status
+      description: |
+        Data model for andon (安灯) status.
+        Reference: data-models.md Section 6 (Andon State Model)
+      type: object
+      required:
+        - lineId
+        - status
+        - updatedAt
+      properties:
+        lineId:
+          type: string
+          description: Production line identifier
+          example: line-01
+        lineName:
+          type: string
+          description: Production line display name
+          example: "1号产线"
+        status:
+          type: string
+          enum: [green, yellow, red, blue]
+          description: |
+            Aggregated line status:
+            - green: 正常 (All systems nominal)
+            - yellow: 等待 (Waiting/material shortage)
+            - red: 故障 (Equipment failure)
+            - blue: 暂停 (Planned stop)
+          example: alert
+        devices:
+          type: array
+          description: Per-device status within the line
+          items:
+            type: object
+            properties:
+              deviceId:
+                type: string
+                example: CNC04
+              status:
+                type: string
+                enum: [running, idle, fault, maintenance]
+                example: running
+              alertCode:
+                type: string
+                nullable: true
+                example: TEMP_HIGH
+              alertMessage:
+                type: string
+                nullable: true
+                example: "主轴温度告警"
+        updatedAt:
+          type: integer
+          format: int64
+          description: UTC milliseconds when status was last updated
+          example: 1726588800000
+
+    Error:
+      name: Error
+      title: Error Response
+      description: Standard error response for realtime channels
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: |
+            Error code:
+            - 1001: Unauthorized (invalid or missing token)
+            - 1002: Forbidden (insufficient permissions)
+            - 2001: Subscription failed
+            - 2002: Device not found
+            - 2003: Variable not found
+            - 3001: Rate limit exceeded
+            - 3002: Connection limit exceeded
+            - 9001: Internal server error
+          example: 1001
+        message:
+          type: string
+          description: Human-readable error description
+          example: "Invalid or expired token"
+        details:
+          type: string
+          nullable: true
+          description: Additional error context
+        requestId:
+          type: string
+          nullable: true
+          description: Request ID for correlation
+
+    Heartbeat:
+      name: Heartbeat
+      title: Heartbeat Message
+      description: Ping/pong heartbeat for connection keepalive
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [ping, pong]
+          example: ping
+        timestamp:
+          type: integer
+          format: int64
+          description: UTC milliseconds
+          example: 1726588800000

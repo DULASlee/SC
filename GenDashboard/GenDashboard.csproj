@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>GenDashboard</AssemblyName>
+    <RootNamespace>GenDashboard</RootNamespace>
+    <AssemblyTitle>GenCollector 看板</AssemblyTitle>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="HslCommunication" Version="12.3.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <EmbeddedResource Include="addrMap.csv" />
+  </ItemGroup>
+</Project>

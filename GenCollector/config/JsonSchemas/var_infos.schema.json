@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string" },
+        "remark": { "type": "string" },
+        "addr": { "type": "string" },
+        "readType": { "type": "string", "enum": ["macro", "plc", "register"] },
+        "group": { "type": "string", "default": "realtime" },
+        "enabled": { "type": "boolean", "default": true },
+        "alarm": {
+          "type": "object",
+          "properties": {
+            "hh": { "type": "number" },
+            "h": { "type": "number" },
+            "l": { "type": "number" },
+            "ll": { "type": "number" },
+            "unit": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

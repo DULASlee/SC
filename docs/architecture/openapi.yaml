@@ -1,0 +1,1102 @@
+openapi: 3.0.3
+info:
+  title: GenPlatform API
+  description: |
+    通用工业采集平台 REST API + 实时事件流。
+    认证方式：Bearer Token（JWT）。
+    支持多租户，租户 ID 通过 token claim `tenant_id` 注入。
+  version: 1.0.0
+  contact:
+    name: GenPlatform Team
+servers:
+  - url: https://api.genplatform.io/v1
+    description: 生产环境
+  - url: https://api-stg.genplatform.io/v1
+    description:  staging环境
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Config
+    description: 配置管理
+  - name: Devices
+    description: 设备管理
+  - name: Variables
+    description: 变量/指标管理
+  - name: History
+    description: 时序历史查询
+  - name: Commands
+    description: 命令下发
+  - name: Alarms
+    description: 告警管理
+  - name: Events
+    description: 实时事件流（SSE/WebSocket）
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+paths:
+
+  # ---------- 配置 ----------
+  /config/collectors:
+    get:
+      tags: [Config]
+      summary: 获取采集器配置列表
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/CollectorStatus'
+      responses:
+        '200':
+          description: 采集器配置列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CollectorConfig'
+                  total:
+                    type: integer
+    post:
+      tags: [Config]
+      summary: 新增采集器配置
+      security: [BearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectorConfig'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectorConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /config/collectors/{collectorId}:
+    get:
+      tags: [Config]
+      summary: 获取指定采集器配置
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CollectorId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectorConfig'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Config]
+      summary: 更新采集器配置
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CollectorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectorConfig'
+      responses:
+        '200':
+          description: 更新成功
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Config]
+      summary: 删除采集器配置
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CollectorId'
+      responses:
+        '204':
+          description: 删除成功
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------- 设备 ----------
+  /devices:
+    get:
+      tags: [Devices]
+      summary: 获取设备列表
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: collectorId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/DeviceStatus'
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 设备列表（分页）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceListResponse'
+    post:
+      tags: [Devices]
+      summary: 注册设备
+      security: [BearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Device'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /devices/{deviceId}:
+    get:
+      tags: [Devices]
+      summary: 获取设备详情
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Devices]
+      summary: 更新设备
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/DeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Device'
+      responses:
+        '200':
+          description: 更新成功
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Devices]
+      summary: 删除设备
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '204':
+          description: 删除成功
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /devices/{deviceId}/status:
+    put:
+      tags: [Devices]
+      summary: 更新设备状态（如标记停机/维修）
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/DeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/DeviceStatus'
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: 更新成功
+
+  # ---------- 变量 ----------
+  /variables:
+    get:
+      tags: [Variables]
+      summary: 获取变量列表
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: deviceId
+          in: query
+          schema:
+            type: string
+        - name: group
+          in: query
+          schema:
+            type: string
+            enum: [realtime, tech, spc]
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 变量列表（分页）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariableListResponse'
+    post:
+      tags: [Variables]
+      summary: 注册变量
+      security: [BearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Variable'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Variable'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /variables/{variableId}:
+    get:
+      tags: [Variables]
+      summary: 获取变量详情
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/VariableId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Variable'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Variables]
+      summary: 更新变量
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/VariableId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Variable'
+      responses:
+        '200':
+          description: 更新成功
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Variables]
+      summary: 删除变量
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/VariableId'
+      responses:
+        '204':
+          description: 删除成功
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------- 历史数据 ----------
+  /history/query:
+    post:
+      tags: [History]
+      summary: 查询时序历史数据
+      security: [BearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistoryQueryRequest'
+      responses:
+        '200':
+          description: 历史数据结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryQueryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /history/query/aggregate:
+    post:
+      tags: [History]
+      summary: 查询聚合历史数据
+      security: [BearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AggregateQueryRequest'
+      responses:
+        '200':
+          description: 聚合结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AggregateQueryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # ---------- 命令下发 ----------
+  /commands/write:
+    post:
+      tags: [Commands]
+      summary: 下发写值命令到设备
+      security: [BearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommandWriteRequest'
+      responses:
+        '202':
+          description: 命令已接受，等待执行结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /commands/reload:
+    post:
+      tags: [Commands]
+      summary: 重载采集器配置
+      security: [BearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [collectorId]
+              properties:
+                collectorId:
+                  type: string
+      responses:
+        '202':
+          description: 重载命令已接受
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+
+  /commands/{commandId}:
+    get:
+      tags: [Commands]
+      summary: 查询命令执行状态
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CommandId'
+      responses:
+        '200':
+          description: 命令状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandStatus'
+
+  # ---------- 告警 ----------
+  /alarms:
+    get:
+      tags: [Alarms]
+      summary: 获取告警列表
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: deviceId
+          in: query
+          schema:
+            type: string
+        - name: severity
+          in: query
+          schema:
+            $ref: '#/components/schemas/AlarmSeverity'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, acknowledged, resolved]
+        - $ref: '#/components/parameters/PageToken'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 告警列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlarmListResponse'
+
+  /alarms/{alarmId}/acknowledge:
+    post:
+      tags: [Alarms]
+      summary: 确认告警
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/AlarmId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: 确认成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alarm'
+
+  /alarms/{alarmId}/resolve:
+    post:
+      tags: [Alarms]
+      summary: 解决告警
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/AlarmId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: 解决成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alarm'
+
+  # ---------- 安灯 ----------
+  /andons:
+    get:
+      tags: [Alarms]
+      summary: 获取安灯状态列表
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: lineId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 安灯状态列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AndonStatus'
+
+  # ---------- 实时事件流 ----------
+  /events/stream:
+    get:
+      tags: [Events]
+      summary: SSE 实时事件流
+      description: |
+        Server-Sent Events (SSE) 长连接，推送：
+        - 实时采样数据（deviceId + values）
+        - 设备状态变更
+        - 告警事件
+        - 命令执行结果
+      security: [BearerAuth]
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: deviceId
+          in: query
+          description: 可选，筛选特定设备
+          schema:
+            type: string
+        - name: events
+          in: query
+          description: 逗号分隔，过滤事件类型
+          schema:
+            type: string
+            enum: [data, status, alarm, command]
+            default: data,status,alarm,command
+      responses:
+        '200':
+          description: SSE 流
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: |
+                  event: data
+                  data: {"type":"data","deviceId":"CNC-01","timestamp":1726588800000,"values":{"RunStatus":1,"SpindleSpeed":3000}}
+
+  /events/websocket:
+    get:
+      tags: [Events]
+      summary: WebSocket 实时事件流
+      description: |
+        完整双向 WebSocket 连接。
+        客户端连接时通过 URL 参数 auth token 认证。
+        服务端推送与 SSE 相同的事件格式。
+        客户端可发送命令消息（见 subscribe 消息）。
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Bearer token（URL 参数）
+        - name: deviceId
+          in: query
+          schema:
+            type: string
+        - name: events
+          in: query
+          schema:
+            type: string
+            default: data,status,alarm,command
+      responses:
+        '101':
+          description: 协议升级为 WebSocket
+        '401':
+          description: 认证失败
+
+# ---------------------------------------------------------------------------
+# Components
+# ---------------------------------------------------------------------------
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT Token，claim `tenant_id` 标识租户，`sub` 标识用户。
+        可通过 `/auth/token` 接口获取。
+
+  parameters:
+    TenantId:
+      name: X-Tenant-Id
+      in: header
+      description: 租户 ID（也可从 JWT claim 读取）
+      schema:
+        type: string
+    CollectorId:
+      name: collectorId
+      in: path
+      required: true
+      schema:
+        type: string
+    DeviceId:
+      name: deviceId
+      in: path
+      required: true
+      schema:
+        type: string
+    VariableId:
+      name: variableId
+      in: path
+      required: true
+      schema:
+        type: string
+    CommandId:
+      name: commandId
+      in: path
+      required: true
+      schema:
+        type: string
+    AlarmId:
+      name: alarmId
+      in: path
+      required: true
+      schema:
+        type: string
+    PageToken:
+      name: pageToken
+      in: query
+      schema:
+        type: string
+      description: 分页游标（上一页返回的 token）
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+
+  schemas:
+
+    # ---- 枚举 ----
+    CollectorStatus:
+      type: string
+      enum: [stopped, starting, running, degraded, error, stopping]
+      description: 采集器运行状态
+
+    DeviceStatus:
+      type: string
+      enum: [online, offline, running, idle, fault, maintenance]
+      description: 设备状态
+
+    AlarmSeverity:
+      type: string
+      enum: [info, warning, error, critical]
+
+    AlarmStatus:
+      type: string
+      enum: [active, acknowledged, resolved]
+
+    TagType:
+      type: string
+      enum: [CNCMacro, PLCBit, PLCWord, PLCFloat, HttpMemRegister, String, Boolean, Integer, Double]
+
+    # ---- 核心模型 ----
+
+    CollectorConfig:
+      type: object
+      required: [collectorId, adapter, mqtt]
+      properties:
+        collectorId:
+          type: string
+          description: 采集器唯一标识
+        description:
+          type: string
+        sampleIntervalMs:
+          type: integer
+          description: 采样间隔（毫秒）
+          default: 1000
+        adapter:
+          type: object
+          required: [type]
+          properties:
+            type:
+              type: string
+              enum: [FanucCnc, MitsubishiEdm, HttpMem, GoGateway, Modbus, Melsec]
+            endpoint:
+              type: string
+            port:
+              type: integer
+            extra:
+              type: object
+              additionalProperties: true
+        mqtt:
+          type: object
+          properties:
+            broker:
+              type: string
+            port:
+              type: integer
+            clientId:
+              type: string
+            topicPrefix:
+              type: string
+              description: MQTT topic 前缀，如 "realtime/CNC04"
+            qos:
+              type: integer
+              enum: [0, 1, 2]
+              default: 0
+
+    Device:
+      type: object
+      required: [deviceId, name, protocol]
+      properties:
+        deviceId:
+          type: string
+        name:
+          type: string
+        protocol:
+          type: string
+          description: "格式: family:version，如 mitsubishi_cnc:mitsubishi_v3"
+        ip:
+          type: string
+        port:
+          type: string
+        mqttDeviceId:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+        collectorId:
+          type: string
+        varGroup:
+          type: string
+          description: 变量组，如 realtime/tech/spc
+        company:
+          type: string
+        workshop:
+          type: string
+        process:
+          type: string
+        status:
+          $ref: '#/components/schemas/DeviceStatus'
+        tags:
+          type: array
+          items:
+            type: string
+          description: 关联的标签 ID 列表
+
+    DeviceListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'
+        total:
+          type: integer
+        nextPageToken:
+          type: string
+
+    Variable:
+      type: object
+      required: [variableId, name, address, dataType, deviceId]
+      properties:
+        variableId:
+          type: string
+        deviceId:
+          type: string
+        name:
+          type: string
+          description: 逻辑名称（如 WorkTime, RunStatus）
+        address:
+          type: string
+          description: 协议地址（如 33868, R0577, D100）
+        displayName:
+          type: string
+        remark:
+          type: string
+          description: 中文语义描述
+        dataType:
+          $ref: '#/components/schemas/TagType'
+        unit:
+          type: string
+        decimals:
+          type: integer
+        group:
+          type: string
+          enum: [realtime, tech, spc]
+        enabled:
+          type: boolean
+        trigger:
+          type: string
+          description: 触发条件（可选）
+
+    VariableListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Variable'
+        total:
+          type: integer
+        nextPageToken:
+          type: string
+
+    HistoryQueryRequest:
+      type: object
+      required: [deviceId, variables, startTime, endTime]
+      properties:
+        deviceId:
+          type: string
+        variables:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        startTime:
+          type: integer
+          format: int64
+          description: 开始时间（UTC 毫秒）
+        endTime:
+          type: integer
+          format: int64
+          description: 结束时间（UTC 毫秒）
+        pageSize:
+          type: integer
+          default: 1000
+        pageToken:
+          type: string
+
+    HistoryQueryResponse:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        variables:
+          type: array
+          items:
+            type: string
+        records:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: integer
+                format: int64
+              values:
+                type: object
+                additionalProperties: true
+        nextPageToken:
+          type: string
+
+    AggregateQueryRequest:
+      type: object
+      required: [deviceId, variables, startTime, endTime, function]
+      properties:
+        deviceId:
+          type: string
+        variables:
+          type: array
+          items:
+            type: string
+        startTime:
+          type: integer
+          format: int64
+        endTime:
+          type: integer
+          format: int64
+        function:
+          type: string
+          enum: [avg, min, max, sum, count]
+        intervalMs:
+          type: integer
+          description: 聚合窗口（毫秒）
+          default: 60000
+
+    AggregateQueryResponse:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        function:
+          type: string
+        intervalMs:
+          type: integer
+        records:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: integer
+                format: int64
+              values:
+                type: object
+                additionalProperties: true
+
+    CommandWriteRequest:
+      type: object
+      required: [deviceId, variableId, value]
+      properties:
+        deviceId:
+          type: string
+        variableId:
+          type: string
+        value:
+          type: object
+          description: 写值（类型需与变量 dataType 匹配）
+        priority:
+          type: integer
+          description: 命令优先级（1-9，数字越大优先级越高）
+          default: 5
+
+    CommandResponse:
+      type: object
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [accepted, executing, completed, failed]
+        createdAt:
+          type: integer
+          format: int64
+        message:
+          type: string
+
+    CommandStatus:
+      type: object
+      properties:
+        commandId:
+          type: string
+        status:
+          type: string
+        result:
+          type: object
+          additionalProperties: true
+        executedAt:
+          type: integer
+          format: int64
+        message:
+          type: string
+
+    Alarm:
+      type: object
+      properties:
+        alarmId:
+          type: string
+        deviceId:
+          type: string
+        variableId:
+          type: string
+        severity:
+          $ref: '#/components/schemas/AlarmSeverity'
+        status:
+          $ref: '#/components/schemas/AlarmStatus'
+        message:
+          type: string
+        triggerValue:
+          type: object
+        threshold:
+          type: object
+        triggeredAt:
+          type: integer
+          format: int64
+        acknowledgedAt:
+          type: integer
+          format: int64
+        acknowledgedBy:
+          type: string
+        resolvedAt:
+          type: integer
+          format: int64
+        comment:
+          type: string
+
+    AlarmListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alarm'
+        total:
+          type: integer
+        nextPageToken:
+          type: string
+
+    AndonStatus:
+      type: object
+      properties:
+        lineId:
+          type: string
+        lineName:
+          type: string
+        status:
+          type: string
+          enum: [normal, alert, stopped]
+        devices:
+          type: array
+          items:
+            type: object
+            properties:
+              deviceId:
+                type: string
+              status:
+                type: string
+                enum: [running, idle, fault, maintenance]
+              alertCode:
+                type: string
+              alertMessage:
+                type: string
+        updatedAt:
+          type: integer
+          format: int64
+
+    # ---- 通用 ----
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: 未认证
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

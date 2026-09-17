@@ -1,0 +1,18 @@
+{
+  "devices": [
+    {
+      "id": "cnc-01",
+      "name": "CNC-01 三菱加工中心",
+      "protocol": "mitsubishi_cnc",
+      "protocolFamily": "mitsubishi_cnc",
+      "ip": "192.168.1.10",
+      "port": "",
+      "mqttDeviceId": "CNC01",
+      "enabled": true,
+      "varGroup": "realtime",
+      "company": "总公司",
+      "workshop": "一车间",
+      "process": "加工工序"
+    }
+  ]
+}

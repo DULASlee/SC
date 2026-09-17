@@ -1,0 +1,58 @@
+# Build outputs
+bin/
+obj/
+out/
+Debug/
+Release/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.suo.bak
+*.userosscache
+*.sln.docstates
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Backups
+backups/
+*.bak
+*.backup
+
+# Secrets
+secrets/
+*.pfx
+*.key
+*.pem
+*.crt
+*.cer
+appsettings.*.json
+!.appsettings.example.json
+
+# OS
+Thumbs.db
+.DS_Store
+Desktop.ini
+$RECYCLE.BIN/
+
+# Test results
+TestResults/
+*.trx
+coverage/
+*.coverage
+*.coveragexml
+
+# NuGet
+packages/
+*.nupkg
+project.lock.json
+
+# Code analysis
+_Resharper*/
+_ReSharper*/
+*.dotCover

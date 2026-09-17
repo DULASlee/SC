@@ -1,0 +1,6 @@
+{
+  "groups": [
+    { "id": "realtime", "name": "实时数据", "timer": 20, "enabled": true },
+    { "id": "alarm", "name": "告警数据", "timer": 5, "enabled": true }
+  ]
+}

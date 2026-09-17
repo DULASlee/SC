@@ -1,0 +1,16 @@
+brand,semanticVar,addrField0,addrField1,addrField2,f3,f4
+None,systemInfo,    ,None,None,0x10,0x1d
+None,spindleSpeed,    ,None,None,0xd,0x1c
+None,spindleLoad,    ,None,None,0xd,0x1c
+None,spindleSpeedSet,    ,None,None,None,0x1c
+None,feedRate,    ,None,None,0xd,0x1c
+None,feedRateSet,    ,None,None,0xd,0x1c
+None,runInfo,    ,None,None,0x20,None
+None,progNum,    ,None,None,0x11,None
+None,runTime,    ,None,None,0x12,None
+None,powerOnTime,    ,None,None,0xe,0x24
+None,cutTime,    ,None,None,0x12,None
+None,cycleTime,    ,None,None,0x12,0x24
+None,alarms,    ,None,None,0x21,None
+None,toolNum,    ,None,None,0xd,0x1c
+None,products,    ,None,None,0xd,0x1c

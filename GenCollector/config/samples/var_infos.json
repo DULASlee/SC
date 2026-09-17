@@ -1,0 +1,46 @@
+{
+  "mitsubishi_cnc": [
+    {
+      "id": "spindleSpeed",
+      "remark": "主轴转速",
+      "addr": "33868",
+      "readType": "macro",
+      "group": "realtime",
+      "enabled": true,
+      "alarm": { "hh": 5000, "h": 4500, "l": 100, "ll": 50, "unit": "RPM" }
+    },
+    {
+      "id": "spindleLoad",
+      "remark": "主轴负载",
+      "addr": "33869",
+      "readType": "macro",
+      "group": "realtime",
+      "enabled": true,
+      "alarm": { "hh": 95, "h": 90, "l": null, "ll": null, "unit": "%" }
+    },
+    {
+      "id": "runTime",
+      "remark": "运行时间",
+      "addr": "2097",
+      "readType": "macro",
+      "group": "realtime",
+      "enabled": true
+    },
+    {
+      "id": "statusOrg",
+      "remark": "运行状态",
+      "addr": "42.0",
+      "readType": "plc",
+      "group": "realtime",
+      "enabled": true
+    },
+    {
+      "id": "alarmOrg",
+      "remark": "告警状态",
+      "addr": "50.14",
+      "readType": "plc",
+      "group": "realtime",
+      "enabled": true
+    }
+  ]
+}

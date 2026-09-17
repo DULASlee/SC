@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["devices"],
+  "properties": {
+    "devices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "protocol", "protocolFamily"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string" },
+          "protocol": { "type": "string" },
+          "protocolFamily": { "type": "string" },
+          "ip": { "type": "string" },
+          "port": { "type": "string" },
+          "mqttDeviceId": { "type": "string" },
+          "enabled": { "type": "boolean", "default": true },
+          "varGroup": { "type": "string", "default": "realtime" },
+          "company": { "type": "string" },
+          "workshop": { "type": "string" },
+          "process": { "type": "string" }
+        }
+      }
+    }
+  }
+}

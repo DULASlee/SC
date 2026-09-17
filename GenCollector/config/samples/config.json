@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "appId": "gen-collector-01",
+  "mqtt": {
+    "server": "tcp://localhost:1883",
+    "prefix": "/YLCY/CNC/",
+    "qos": 0,
+    "reconnect": {
+      "enabled": true,
+      "initialDelayMs": 1000,
+      "maxDelayMs": 60000,
+      "multiplier": 2.0
+    }
+  },
+  "simulate": false,
+  "port": 8080,
+  "authCode": "",
+  "database": {
+    "enabled": false,
+    "type": "iotdb"
+  },
+  "ditto": {
+    "enabled": false,
+    "endpoint": "http://localhost:8080",
+    "namespace": "org.gencore"
+  },
+  "andons": [
+    { "id": "line-01", "name": "1号产线", "devices": ["cnc-01"] }
+  ]
+}
