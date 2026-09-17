@@ -90,6 +90,18 @@ def main():
     parser.add_argument("--base", default="origin/develop", help="对比的基线分支")
     args = parser.parse_args()
 
+    # 架构师 §二 补全 3：origin/develop 可能不存在（首次 push 前 / 本地无 GitHub remote）
+    # 检查 ref 是否存在；不存在则降级为 HEAD~1（仍能跑通，PR 阶段会被 GitHub Actions 覆盖）
+    ref_check = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", args.base],
+        capture_output=True, text=True,
+    )
+    if ref_check.returncode != 0:
+        warn_msg = f"基线 {args.base} 不存在，降级为 HEAD~1（首次 push 前 / 本地无 GitHub remote）"
+        print(f"[WARN] {warn_msg}")
+        if args.base == "origin/develop":
+            args.base = "HEAD~1"
+
     # 1. 确定任务 ID
     task_id = args.task_id
     if not task_id:

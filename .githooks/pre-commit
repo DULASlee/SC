@@ -54,3 +54,18 @@ else
 fi
 
 ok "pre-commit 全部通过"
+
+# 教育性提示：失败时打印（不会影响 exit code）
+cat <<'EOF' 1>&2
+
+=========================================================================
+pre-commit 门禁失败修复指南
+=========================================================================
+- 任务卡校验失败  → 修改 .harness/tasks/active/TASK-XXX.yaml
+- scope 检查失败  → 将变更限制在 allow_write 范围内，或申请新任务卡
+- 契约一致性失败  → 检查 contracts/openapi.yaml 与 .harness/schema/ 一致性
+- 编译失败       → 按 .editorconfig 修复 CS/RS/RCS 警告
+- 受保护路径     → commit message 加 [APPROVED-BY: 架构师-name]
+- 受保护路径     → 或用豁免前缀（chore:/docs:） + commit message 含 type(scope)
+=========================================================================
+EOF

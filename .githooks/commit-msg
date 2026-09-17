@@ -76,6 +76,8 @@ if [ -n "$PROTECTED_HIT" ]; then
         echo "       修复方式：commit message 加 [APPROVED-BY: architect-name]" >&2
         echo "       或豁免前缀：chore:/docs:" >&2
         echo "       或架构师本人设 SKIP_PROTECTED_CHECK=1" >&2
+        echo "" >&2
+        echo "       ⚠  .github/workflows/ 修改需架构师批准（CI 配置不能自改）" >&2
         exit 1
     fi
 fi

@@ -212,3 +212,16 @@ bash scripts/setup-local-ci.sh
 3. push 到远程，CI 自动生效
 4. 本地 hooks 保留作为**快速反馈层**（CI 跑前先本地跑一次）
 
+### 工作流详情
+
+完整工作流见 `docs/engineering/workflow.md`：
+- 分支模型（main / develop / feat/* / fix/*）
+- 首次推送顺序（架构师在 GitHub 网页配置分支保护）
+- 开发者 9 步流程（含 L5 验收环节）
+- 受保护路径与豁免前缀列表
+
+### 紧急出口
+
+- `SKIP_PROTECTED_CHECK=1`：架构师本人绕过受保护路径 APPROVED-BY 检查
+- `git commit -m "..." --no-verify`：跳过所有 hooks（**不推荐**，违反 L5 规则 2）
+

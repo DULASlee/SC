@@ -125,6 +125,7 @@ def main() -> int:
         for v in violations:
             print(f"  - {v}")
         print("\n修复方式：将变更限制在任务卡 allow_write 范围内，或申请新任务卡。")
+        print("提示：.github/、tests/、.harness/ 等受保护路径由 commit-msg hook + check-protected-paths.py 独立拦截（需 APPROVED-BY）。")
         return 1
 
     if len(files) > max_files:

@@ -45,7 +45,15 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task-id", required=True)
     parser.add_argument("--operator", default="unknown", help="验收人")
+    parser.add_argument(
+        "--approve-protected-paths",
+        action="store_true",
+        help="架构师本人跳过受保护路径检查（设置 SKIP_PROTECTED_CHECK=1 也会跳过）",
+    )
     args = parser.parse_args()
+
+    if args.approve_protected_paths:
+        os.environ["SKIP_PROTECTED_CHECK"] = "1"
 
     VERIFY_DIR.mkdir(parents=True, exist_ok=True)
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
