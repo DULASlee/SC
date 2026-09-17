@@ -1,0 +1,42 @@
+# L3 任务卡模板
+# 使用方式：复制本文件到 .harness/tasks/active/TASK-XXX.yaml，填写所有字段
+# 校验方式：python .harness/scripts/validate-task-card.py .harness/tasks/active/TASK-XXX.yaml
+
+id: TASK-000
+title: <一句话描述任务>
+
+status: draft
+created: 2026-09-17T00:00:00Z
+created_by: architect
+
+scope:
+  allow_write:
+    - src/<模块>/**
+  deny_write:
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+    - .harness/**
+
+acceptance_tests:
+  - tests/<项目>.Tests/<测试文件>.cs
+
+done_when:
+  - "ci: build"
+  - "ci: acceptance_tests"
+  - "ci: coverage_diff"
+  - "ci: mutation_test"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 300
+  max_files_changed: 10
+
+depends_on: []
+
+references: []
+
+notes: |
+  <任务背景、注意事项、相关 ADR 引用>

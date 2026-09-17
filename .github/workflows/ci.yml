@@ -126,3 +126,49 @@ jobs:
           name: stryker-report
           path: StrykerOutput/**/reports/mutation-report.html
           if-no-files-found: warn
+
+  # ============================================
+  # L3 任务卡校验（harness 任务协议）
+  # ============================================
+  validate-task-cards:
+    name: L3 Validate Task Cards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install pyyaml jsonschema
+
+      - name: Validate all active task cards
+        run: python .harness/scripts/validate-task-card.py --all
+
+  # ============================================
+  # L3 PR scope 检查（仅在 pull_request 触发）
+  # ============================================
+  check-pr-scope:
+    name: L3 Check PR Scope
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install pyyaml
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
+
+      - name: Check PR scope
+        env:
+          PR_DESCRIPTION: ${{ github.event.pull_request.body }}
+        run: python .harness/scripts/check-pr-scope.py --base origin/${{ github.base_ref }}

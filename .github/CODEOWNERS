@@ -1,0 +1,12 @@
+# CODEOWNERS · L3 harness 目录保护
+# 仅架构师可修改任务卡 / 脚本 / schema / 模板。
+# 执行者（弱模型）对这些路径无写权限 —— 这是 L3 任务协议的强制层。
+#
+# 替换 @org/architecture-leads 为实际团队 / 用户的 GitHub handle。
+
+# L3 harness 目录：所有子路径
+/.harness/                                      @org/architecture-leads
+/.harness/tasks/**                             @org/architecture-leads
+/.harness/schema/**                            @org/architecture-leads
+/.harness/scripts/**                           @org/architecture-leads
+/.harness/README.md                            @org/architecture-leads

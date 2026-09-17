@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TaskCard",
+  "description": "L3 任务卡：定义单个开发任务的边界、验收标准和完成条件",
+  "type": "object",
+  "required": ["id", "title", "status", "created", "created_by", "scope", "acceptance_tests", "done_when"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^TASK-[0-9]{3,}$",
+      "description": "任务唯一标识，如 TASK-001"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 120,
+      "description": "任务简短描述"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "ready", "in-progress", "blocked", "done"],
+      "description": "任务状态。draft=草稿；ready=可执行；in-progress=执行中；blocked=阻塞；done=已验收"
+    },
+    "created": {
+      "type": "string",
+      "format": "date-time",
+      "description": "创建时间（ISO 8601）"
+    },
+    "created_by": {
+      "type": "string",
+      "enum": ["architect", "strong-model"],
+      "description": "任务卡创建者。必须是架构师或强模型，不能是执行者"
+    },
+    "scope": {
+      "type": "object",
+      "required": ["allow_write", "deny_write"],
+      "additionalProperties": false,
+      "properties": {
+        "allow_write": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "允许写入的路径 glob。执行者只能修改这些路径下的文件"
+        },
+        "deny_write": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "禁止写入的路径 glob。即使匹配 allow_write，deny_write 优先级更高"
+        }
+      }
+    },
+    "acceptance_tests": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "验收测试文件路径。由架构师预先写好，初始为红"
+    },
+    "done_when": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^ci: [a-z_]+$"
+      },
+      "description": "完成条件，每个条目引用 CI 中的一个 gate。任务卡不硬编码阈值，阈值由 CI 定义"
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_lines_changed": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 300
+        },
+        "max_files_changed": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 10
+        }
+      }
+    },
+    "depends_on": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^TASK-[0-9]{3,}$"
+      },
+      "description": "前置任务 ID 列表。为空表示无依赖"
+    },
+    "references": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "相关 ADR、契约、文档的路径或 ID"
+    },
+    "notes": {
+      "type": "string",
+      "description": "任务背景、注意事项。可引用 ADR-005 等已生效机制"
+    }
+  }
+}

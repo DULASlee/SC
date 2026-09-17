@@ -1,0 +1,46 @@
+id: TASK-001
+title: 为 GenCollector 的 CollectorEngine 主循环补齐基础单元测试（示范任务，不实际执行）
+
+status: draft
+created: 2026-09-17T00:00:00Z
+created_by: architect
+
+scope:
+  allow_write:
+    - GenCollector.Tests/**
+  deny_write:
+    - GenCollector/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+    - .harness/**
+
+acceptance_tests:
+  - GenCollector.Tests/CollectorEngineTests.cs
+
+done_when:
+  - "ci: build"
+  - "ci: acceptance_tests"
+  - "ci: mutation_test"
+
+constraints:
+  max_lines_changed: 300
+  max_files_changed: 5
+
+depends_on: []
+
+references:
+  - docs/adr/ADR-001-Collector-Thread-Sleep-Exemption.md
+  - docs/adr/ADR-005-Mutation-Score-Progression.md
+
+notes: |
+  这是一个**示范任务卡**，用于展示格式。
+  实际执行时，由架构师：
+  1. 先写好 GenCollector.Tests/CollectorEngineTests.cs（初始为红）
+  2. 把 status 改为 ready
+  3. 运行 start-task.py TASK-001 生成上下文
+  4. 在新会话中让 Agent 读取上下文并执行
+
+  注意：acceptance_tests 由架构师预先写好，Agent 对 GenCollector/**
+  生产代码无写权限（仅允许在测试项目内加测试代码）。
