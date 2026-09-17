@@ -1,0 +1,23 @@
+# L0 harness · 文件编码 + 行尾 + 缩进。
+# 故意不含 csharp_style_* 全套规则 —— 现有代码会大面积违反，会把 L0 拖成 3 小时。
+# csharp_style_* 留给 L2 渐进迁移。
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.{cs,csproj,props,targets,xml,json,yml,yaml,md}]
+charset = utf-8
+
+[*.sh]
+end_of_line = lf
+
+[*.ini]
+charset = utf-8
+end_of_line = crlf

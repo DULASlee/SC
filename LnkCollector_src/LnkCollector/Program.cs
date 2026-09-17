@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace LnkCollector;
 
-internal class Program
+internal static class Program
 {
 	[DllImport("RemoteComm.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
 	public static extern int remote_new_connect(string IP);

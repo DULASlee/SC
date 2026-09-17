@@ -1,0 +1,48 @@
+<!--
+  L0 harness · 仓库级 MSBuild 默认值。
+  目的：消除 x86 / nullable / warnings-as-errors 三类易错。
+  加载顺序：MSBuild 自动按从 solution 向上回溯的方式 import 此文件。
+  Agent 严禁：在此文件加业务相关 Property；如需扩展，先开 ADR。
+-->
+<Project>
+
+  <!-- 基础：与现有 5 个项目对齐 (GenCollector/GenDashboard/IoTPlatform.*/LnkCollector_src) -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!--
+    警告即错误：把历史遗留警告一次性暴露为编译错误。
+    唯一已知遗留警告：CS0414 _watcherFailed 字段未使用 —— 必须在 commit 前删除该字段。
+    若新增警告，需在 PR 描述中说明，禁止用 #pragma warning disable 掩盖。
+  -->
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!--
+    平台目标：含 "Collector" 的项目强制 x86（ADR-0003）。
+    判定式：项目名包含 Collector 子串 —— 覆盖 GenCollector / GenCollector.Tests / 未来同类。
+    注意：LnkCollector_src 不含 "Collector"（带下划线），不受影响，符合预期（它属于反编译对照源）。
+  -->
+  <PropertyGroup Condition="$(MSBuildProjectName.Contains('Collector'))">
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+
+  <!--
+    BannedSymbols 接入：
+    一行干掉一整类错（Encoding.Default / DateTime.Now / Thread.Sleep）。
+    BannedSymbols.txt 必须位于 Directory.Build.props 同级目录（即仓库根）。
+  -->
+  <ItemGroup>
+    <PackageReference Include="Roslynator.Analyzers" Version="3.1.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <AdditionalFiles Include="BannedSymbols.txt" />
+  </ItemGroup>
+
+</Project>

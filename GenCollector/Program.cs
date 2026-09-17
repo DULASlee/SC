@@ -5,7 +5,7 @@ using GenCollector.Core;
 
 namespace GenCollector
 {
-    class Program
+    static class Program
     {
         static void Main(string[] args)
         {

@@ -1,5 +1,8 @@
 {
   "workspace_id": "a368-f9ec-0e86-5361",
   "workspace_id_at": "2026-09-17T01:45:54Z",
-  "project_name": "JQKJ"
+  "project_name": "JQKJ",
+  "rules": [
+    ".specstory/config/engineering-rules.mdc"
+  ]
 }

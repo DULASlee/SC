@@ -97,7 +97,6 @@ namespace GenCollector.Config
         // Polling fallback
         private readonly Timer _pollingTimer;
         private readonly int _pollingIntervalMs;
-        private volatile bool _watcherFailed = false;
         private volatile bool _usePolling = false;
 
         // Debounce: 500ms after last change before reloading
@@ -179,7 +178,6 @@ namespace GenCollector.Config
         {
             // FileSystemWatcher can fail on Docker volumes or when file handles are exhausted.
             // Fall back to polling.
-            _watcherFailed = true;
             _usePolling = true;
             _watcher.EnableRaisingEvents = false;
             _pollingTimer.Change(_pollingIntervalMs, _pollingIntervalMs);
