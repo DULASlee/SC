@@ -122,6 +122,36 @@ cnc-03={ ""id"": ""cnc-03"", ""protocol"": ""mitsubishi_cnc"", ""ip"": ""192.168
         Assert.Equal("cnc-03", devices[0].Id);
     }
 
+    // ---------- 4. GBK/Shift-JIS 编码的 INI 文件 → 正常解析 ----------
+    // 需要 Encoding.RegisterProvider 注册代码页支持 (.NET Core/.NET 5+ 默认不支持)
+
+    [Fact]
+    public void LoadSetting_NonUtf8EncodedIni_ParsesCorrectly()
+    {
+        // Windows .NET Core 3.0+ 原生支持 Encoding.GetEncoding(int) for Windows code pages
+        var iniPath = Path.Combine(_tempDir, "setting.ini");
+        var enc = Encoding.GetEncoding(932); // cp 932 = Shift-JIS
+        var bytes = enc.GetBytes("[setting]\nappId=shift-jis-test\nmqttServer=tcp://sjis:1883\n");
+        File.WriteAllBytes(iniPath, bytes);
+
+        var loader = new JsonConfigLoader(_tempDir);
+        var setting = loader.LoadSetting();
+        Assert.Equal("shift-jis-test", setting.AppId);
+    }
+
+    [Fact]
+    public void MigrateSetting_NonUtf8EncodedIni_ParsesCorrectly()
+    {
+        var iniPath = Path.Combine(_tempDir, "setting.ini");
+        var enc = Encoding.GetEncoding(932);
+        var bytes = enc.GetBytes("[setting]\nappId=shift-jis-migrate\nmqttServer=tcp://sjis-migrate:1883\n");
+        File.WriteAllBytes(iniPath, bytes);
+
+        var migrator = new ConfigMigrator(_tempDir);
+        var setting = migrator.MigrateSetting();
+        Assert.Equal("shift-jis-migrate", setting.AppId);
+    }
+
     // ---------- 5. 迁移失败 → 备份源文件 + 报告错误 ----------
 
     [Fact]
