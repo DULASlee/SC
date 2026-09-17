@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://industrial-platform.local/contracts/schemas/telemetry.json",
+  "title": "TelemetryPayload",
+  "description": "设备遥测 payload（与 GenCollector/CollectorEngine.BuildPayload 一致）。单一真理来源 — 派生视图（openapi/asyncapi/mqtt）必须 $ref 此文件，不得重复定义字段。",
+  "type": "object",
+  "properties": {
+    "properties": {
+      "type": "array",
+      "description": "一组遥测点（与 GenCollector 输出 1:1）",
+      "items": {
+        "type": "object",
+        "properties": {
+          "MeasEncoding": {
+            "type": "string",
+            "description": "语义变量编码（如 STS/spindleSpeed/products）",
+            "maxLength": 64
+          },
+          "MeasName": {
+            "type": "string",
+            "description": "语义名（中/英）",
+            "maxLength": 128
+          },
+          "value": {
+            "type": "array",
+            "description": "原始数值数组（与 GenCollector payload 对齐）",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 1
+          },
+          "TimeStamp": {
+            "type": "integer",
+            "description": "采集时间戳（Unix 毫秒）",
+            "minimum": 0
+          },
+          "DeviceEncoding": {
+            "type": "string",
+            "description": "设备 MQTT ID（与 device_cnc.ini 的 mqttDeviceId 对齐）",
+            "maxLength": 64
+          }
+        },
+        "required": ["MeasEncoding", "MeasName", "value", "TimeStamp", "DeviceEncoding"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["properties"],
+  "additionalProperties": false
+}

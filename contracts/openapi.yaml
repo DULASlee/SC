@@ -1,0 +1,36 @@
+openapi: 3.0.3
+info:
+  title: Industrial Platform API (L1-alpha 最小子集)
+  version: 0.1.0-alpha
+  description: |
+    L1-α 骨架。**只冻结 1 个端点（POST /telemetry）** 验证单一真理来源机制。
+    完整契约收敛是 L1-β 任务（参考 contract-consistency.md 的 7+ 处不一致）。
+
+servers:
+  - url: http://localhost:5000/api/v1
+    description: 本地开发
+
+paths:
+  /telemetry:
+    post:
+      operationId: ingestTelemetry
+      summary: 接收遥测数据
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/telemetry.json#/properties'
+      responses:
+        '202':
+          description: 已接受
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted:
+                    type: integer
+                  rejected:
+                    type: integer
+                required: [accepted, rejected]
