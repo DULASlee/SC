@@ -55,8 +55,13 @@ fi
 
 ok "pre-commit 全部通过"
 
-# 教育性提示：失败时打印（不会影响 exit code）
-cat <<'EOF' 1>&2
+# 教育性提示：在 hook 失败时打印（通过 set -e 触发 EXIT trap）
+# 注：trap 在 set -e 下，每个失败命令会触发 EXIT 一次，但 bash 默认 EXIT trap 只触发一次
+# 用 on_error 函数在 ERR trap 上调用
+on_error() {
+    local exit_code=$?
+    echo "" >&2
+    cat <<'EOF' >&2
 
 =========================================================================
 pre-commit 门禁失败修复指南
@@ -69,3 +74,5 @@ pre-commit 门禁失败修复指南
 - 受保护路径     → 或用豁免前缀（chore:/docs:） + commit message 含 type(scope)
 =========================================================================
 EOF
+}
+trap on_error ERR
