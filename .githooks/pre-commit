@@ -1,0 +1,57 @@
+#!/bin/bash
+# L0-L3 本地门禁：提交前必须全部通过
+# 架构师 §一 方案 1（pre-commit hook）
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# shellcheck disable=SC1091
+source .githooks/lib/common.sh
+
+echo "=== pre-commit 门禁 ==="
+
+# 1. 关键目录保护
+python .harness/scripts/check-protected-paths.py || fail "关键目录越权修改"
+
+# 2. 任务卡校验
+python .harness/scripts/validate-task-card.py --all || fail "任务卡校验失败"
+
+# 3. 本地 scope 检查
+python .harness/scripts/check-local-scope.py || fail "scope 检查失败"
+
+# 4. 契约一致性
+python scripts/check-contract-consistency.py || fail "契约一致性失败"
+
+# 5. 编译 + 警告即错误
+# 注：本仓库无 .sln 文件，逐个工程 build
+PROJECTS=(
+    "GenCollector/GenCollector.csproj"
+    "GenDashboard/GenDashboard.csproj"
+    "GenCollector.Tests/GenCollector.Tests.csproj"
+    "GenDashboard.Tests/GenDashboard.Tests.csproj"
+    "source/IoTPlatform/src/IoTPlatform.Core/IoTPlatform.Core.csproj"
+    "source/IoTPlatform/src/IoTPlatform.Adapters/IoTPlatform.Adapters.csproj"
+    "source/IoTPlatform/src/IoTPlatform.Host/IoTPlatform.Host.csproj"
+    "source/IoTPlatform/samples/IoTPlatform.UI.Wpf/IoTPlatform.UI.Wpf.csproj"
+)
+for proj in "${PROJECTS[@]}"; do
+    if [ -f "$proj" ]; then
+        if [[ "$proj" == GenCollector* ]]; then
+            dotnet build "$proj" -c Release -r win-x86 --self-contained true -p:PlatformTarget=x86 /p:TreatWarningsAsErrors=true --nologo -v quiet \
+                || fail "编译失败：$proj"
+        else
+            dotnet build "$proj" -c Release /p:TreatWarningsAsErrors=true --nologo -v quiet \
+                || fail "编译失败：$proj"
+        fi
+    fi
+done
+
+# 6. 架构测试（如果存在）
+if [ -f "tests/ArchitectureTests/ArchitectureTests.csproj" ]; then
+    dotnet test tests/ArchitectureTests/ArchitectureTests.csproj -c Release --no-build --nologo -v quiet || fail "架构测试失败"
+else
+    info "ArchitectureTests 不存在，跳过（不在本阶段范围）"
+fi
+
+ok "pre-commit 全部通过"

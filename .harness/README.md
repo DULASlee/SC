@@ -165,3 +165,50 @@ A：不绕过。报告架构师。门禁的权威性高于单次效率。
 
 **Q：怎么生成下一会话上下文？**
 A：`python .harness/scripts/start-task.py TASK-XXX`，产出 `.harness/context/TASK-XXX-context.md`。新会话里让 Agent 读它即可。
+
+---
+
+## 本地 CI 使用说明
+
+本项目使用**本地 git hooks + 人工验收**替代远程 CI（架构师 L5 决策）。
+
+### 一次性配置
+
+```bash
+bash scripts/setup-local-ci.sh
+```
+
+该脚本会：
+1. `git config core.hooksPath .githooks`（让 git 用仓库内 hooks）
+2. 给 hooks 加 `+x` 执行权限
+3. 创建裸仓库 `../JQKJ-verify.git` 并添加为 `local-verify` remote
+
+### 日常流程
+
+| 动作 | 触发的门禁 |
+|---|---|
+| `git commit` | pre-commit（编译、契约、架构、scope）+ commit-msg（强制 TASK-XXX） |
+| `git push local-verify main` | pre-push（全测试 + 覆盖率） |
+| 人类验收 | `python .harness/scripts/verify-all.py --task-id TASK-XXX` |
+
+### 关键约束
+
+1. **受保护路径修改需人工批准**：`tests/`、`contracts/`、`.harness/`、`.githooks/` 的任何变更必须含 `[APPROVED-BY: <name>]`（架构师本人可设 `SKIP_PROTECTED_CHECK=1`）
+2. **验收记录是 done 的唯一凭证**：`docs/verification/VERIFY-*.md` 必须存在
+3. **报告必须区分本地/验收/远程执行**——见 `docs/engineering/l5-separation-of-roles.md` 规则 1
+
+### 本地新增 vs 远程 CI 的脚本分工
+
+| 脚本 | 用途 | 何时跑 |
+|---|---|---|
+| `.harness/scripts/check-local-scope.py` | 本地 git hook 用 | `git commit` 前 |
+| `.harness/scripts/check-pr-scope.py` | 远程 CI（GitHub Actions）用 | PR 事件 |
+| `.harness/scripts/verify-all.py` | 人类验收 | 任务合并前 |
+
+### 后期升级到远程 CI（架构师 L5 文档 §后期升级路径）
+
+1. 保留 `.github/workflows/ci.yml`
+2. `git remote add origin <url>`
+3. push 到远程，CI 自动生效
+4. 本地 hooks 保留作为**快速反馈层**（CI 跑前先本地跑一次）
+

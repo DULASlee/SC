@@ -1,0 +1,39 @@
+#!/bin/bash
+# 强制 commit message 引用 TASK-XXX（架构师 §一 S4）
+set -e
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# 豁免前缀（配置类、文档类、harness 自身提交）
+EXEMPT_PREFIXES=(
+    "chore:"
+    "docs:"
+    "fix(ci):"
+    "feat(l0):"
+    "feat(l1"
+    "feat(l2"
+    "feat(l3"
+    "feat(l4"
+    "feat(local-ci"
+)
+
+FIRST_LINE="$(echo "$COMMIT_MSG" | head -n 1)"
+
+for prefix in "${EXEMPT_PREFIXES[@]}"; do
+    if [[ "$FIRST_LINE" == $prefix* ]]; then
+        exit 0
+    fi
+done
+
+if ! echo "$FIRST_LINE" | grep -qE "TASK-[0-9]{3,}"; then
+    echo "[FAIL] commit message 必须引用 TASK-XXX 或以豁免前缀开头" >&2
+    echo "       当前消息首行：$FIRST_LINE" >&2
+    echo "       示例 1：feat(TASK-042): implement edge buffer" >&2
+    echo "       示例 2：chore: bump dependency" >&2
+    echo "       示例 3：docs: update README" >&2
+    echo "       豁免前缀：${EXEMPT_PREFIXES[*]}" >&2
+    exit 1
+fi
+
+exit 0
