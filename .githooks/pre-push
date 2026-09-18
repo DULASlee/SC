@@ -11,26 +11,18 @@ source .githooks/lib/common.sh
 
 echo "=== pre-push 门禁 ==="
 
-# 0. 分支规则检查（架构师 §二 补全 2）
-#    禁止直接 push 到 main（应在 GitHub 网页配分支保护）。
-#    本地开发应推 feat/* → PR → 架构师合入 main。
+# 0. 分支规则（架构师决定：取消 PR 强制流程，改为个人 + AI 辅助开发模式）
+#    不再禁止直推 main/develop。质量仍由每次 push 后的 CI 保障（编译/测试/架构），
+#    红灯为"提醒"而非"阻止 push"。feat/*|fix/* 仅做非阻断的验收记录提示。
 remote="$1"  # pre-push hook 第 1 参数是 remote 名（origin）
 if [ "$remote" = "origin" ]; then
     while read local_ref local_sha remote_ref remote_sha; do
         branch="${remote_ref#refs/heads/}"
-        if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
-            # 首次 push 豁免：remote origin 上 main 分支还不存在时（如新仓库初始化），
-            # 必须能 push 上去。架构师 §三 阶段 3.4：先 push 再保护。
-            if ! git rev-parse --verify --quiet "origin/$branch" > /dev/null 2>&1; then
-                warn "首次 push 到 origin/$branch（main 尚未在 remote，豁免分支保护）"
-                warn "  → push 后架构师必须在 GitHub 网页配置 main 分支保护"
-            else
-                echo "[FAIL] 禁止直接 push 到 origin/$branch" >&2
-                echo "       推送 hotfix 应走 PR 流程（先推 feat/*，由架构师 review 后合入）" >&2
-                echo "       如紧急回滚，必须通过 PR 流程或架构师显式批准" >&2
-                exit 1
-            fi
-        fi
+        case "$branch" in
+            feat/*|fix/*)
+                info "推送到 $branch：若为任务交付，验收记录可归档到 .harness/tasks/（不阻断）"
+                ;;
+        esac
     done
 fi
 
