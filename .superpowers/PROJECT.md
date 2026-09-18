@@ -2,7 +2,7 @@
 
 > **本文件是项目级 superpowers 入口**。任何新会话（Claude / Codex / MiniMax / 其他）启动时，**先读本文件**，再决定加载哪些 skill。
 >
-> **本文件不替代**：`docs/项目harness工程构建/harness工程构建母本.md`（harness 设计）、`docs/architecture/adr/`（架构决策）、`.specstory/config/engineering-rules.mdc`（项目铁律）。
+> **本文件不替代**：`docs/项目harness工程构建/harness工程构建母本.md`（harness 设计）、`docs/architecture/adr/`（架构决策）、`docs/ai-workspace/rules/engineering-rules.mdc`（项目铁律）。
 
 ---
 
@@ -28,7 +28,7 @@
 - **Law 2 — Verification is Completion**：完成声明必须附 5 步证据链（IDENTIFY → RUN → READ → VERIFY → CLAIM）。**禁止**说"应该"、"大概"、"看起来"，**禁止**只跑测试不读输出就声称完成。
 - Law 3-10（具体内容见全局文件）同等适用。
 
-### 2.2 项目级工程铁律（来自 `.specstory/config/engineering-rules.mdc`）
+### 2.2 项目级工程铁律（来自 `docs/ai-workspace/rules/engineering-rules.mdc`）
 
 - 契约优先（OpenAPI / AsyncAPI / MQTT / data-models 未冻结前禁写业务代码）
 - 禁止自报完成（必须附证据）
@@ -111,7 +111,7 @@
 | `decompile_report.md` | 反编译报告（终态） |
 | `brand_address_map.md` | 全品牌地址映射（终态） |
 | `harness/l0-report.md` | L0 harness 验收报告 |
-| `.specstory/config/engineering-rules.mdc` | 项目级铁律 |
+| `docs/ai-workspace/rules/engineering-rules.mdc` | 项目级铁律 |
 | `.gitignore` | 已含 secrets/、backups/、TestResults/ 等 |
 
 ---
@@ -136,7 +136,7 @@
 - ❌ **删测试掩盖警告**（铁律 §4）— 写新测试或修代码，不删旧测试
 - ❌ **伪造 evidence/*.json**（评审 R4）— 证据必须由 CI 产出
 - ❌ **修改 `Directory.Build.props` 加业务 Property** — 该文件是 L0 产物，仅 L2+ ADR 可扩展
-- ❌ **修改 `.specstory/config/engineering-rules.mdc`** — 项目铁律，需 ADR 升级
+- ❌ **修改 `docs/ai-workspace/rules/engineering-rules.mdc`** — 项目铁律，需 ADR 升级
 - ❌ **跨多个未冻结契约写代码**（铁律 §2） — 需先冻结契约
 - ❌ **回退 INI** 当 JSON 损坏（ADR-0004）— 必须报错退出
 - ❌ **加载 binary-analysis-patterns / ctf-reverse / ctf-malware** 到本项目会话（研究阶段已结束）
