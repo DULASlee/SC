@@ -25,6 +25,8 @@
 - [TASK-013] `git stash` + `git reset --hard` + `git stash pop` 是清理污染分支的标准操作。feature 分支的 force push 是允许的，不违反铁律 13
 - [TASK-013] `git stash` 默认不保存 untracked 文件 → 重建比恢复快。重要 untracked 文件应 `git stash -u` 或先 `git add`
 - [TASK-017] 任务卡 allow_write 不含 lessons-learned.md 但铁律 12 强制修改它 → 每个合规 PR 必挂 L3 scope 门禁（4 个 PR 连续红灯）；卡模板与 active 卡必须包含该文件
-- [TASK-017] check-pr-scope 先查 deny 后查 allow 且卡内 allow/deny 区间重叠（TASK-012 `tests/**/*.cs`）→ allow 成死信；v2 已改为 allow 先行 + 重叠显式报 [CONFIG-CONFLICT]
+- [TASK-017] check-pr-scope 先查 deny 后查 allow 且卡内 allow/deny 区间重叠（TASK-012 `tests/**/*.cs`）→ allow 成死信；v3 已改为 allow 先行 + 重叠显式报 [CONFIG-CONFLICT]
+- [TASK-017] scope 检查器若用"全文 TASK-\d+"提取授权卡，会把正文里引用/对比/路径中的历史卡（如 draft TASK-001 的 deny `.harness/**`）也加载进并集 → 自举 PR 自撞 10 个 CONFLICT；v3 只认交付声明（`## TASK-XXX` 标题 / Closes|Fixes|Refs|任务卡 关键词引导）+ 卡须 ready/in_progress，否定语境行（未改动/不在/not）整行跳过
+- [TASK-017] DSH shell 工具全部 0xC0000142 且零输出 ≠ pwsh 未装/损坏：是 workspace-write 的 Windows ACL restricted-token 沙箱 runner 自身启动失败；danger-full-access 绕过沙箱即正常。诊断顺序：先用升级模式跑一次再下"环境坏了"结论，勿在表象层反复重试同一命令
 
 <!-- 新增经验追加在上方，格式保持一致 -->
