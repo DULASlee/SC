@@ -146,6 +146,23 @@ ADR 格式要求：放在 `docs/adr/` 目录下，包含背景、决策、后果
 
 ---
 
+## 13. 禁止直接合入 main
+
+**铁律 13「禁止直接合入 main」**：所有变更必须通过 feature 分支 + PR + 架构师审核后 merge 到 main。禁止 `git push origin main`。
+
+---
+
+## 14. 文档与配置集中化
+
+**铁律 14「文档与配置集中化」**：
+1. 所有非编译产物（文档、配置、证据、脚本）必须存放在 `docs/` 对应子目录下，禁止散落在项目根或其他任意位置。
+2. 所有 AI 工具配置（rules、mdc、skills、hooks、MCP）的唯一源位于 `docs/ai-workspace/`，禁止在各 IDE 私有目录维护独立副本。
+3. 架构文档必须存于 `docs/architecture/`，部署文档必须存于 `docs/deployment/`，工作汇报必须存于 `docs/reports/`。
+4. 测试证据和红态文件必须存于 `docs/testing/red/TASK-XXX/`。
+5. 违反本铁律的文件，架构师有权要求立即迁移，相关 PR 必须包含迁移操作。
+
+---
+
 ## 违规处理
 
 违反本铁律：
