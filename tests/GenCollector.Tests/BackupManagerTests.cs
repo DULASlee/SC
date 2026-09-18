@@ -27,7 +27,9 @@ public class BackupManagerTests
         Directory.CreateDirectory(tempDir);
         var bm = new BackupManager(tempDir, maxBackups: 3);
         for (int i = 1; i <= 5; i++)
+        {
             bm.SaveBackup("config.json", $"{{\"version\": {i}}}");
+        }
         var files = Directory.GetFiles(tempDir, "config.json.*.bak");
         Assert.Equal(3, files.Length);
         Directory.Delete(tempDir, true);
@@ -67,7 +69,9 @@ public class BackupManagerTests
         var bm = new BackupManager(tempDir, maxBackups: 5);
 
         for (int i = 0; i < 10; i++)
+        {
             bm.SaveBackup("data.json", $"{{\"v\": {i}}}");
+        }
 
         // Force cleanup
         bm.CleanupOldBackups("data.json");

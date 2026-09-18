@@ -21,5 +21,8 @@
 - [parallel-sessions] 同一仓库开两个并行 AI 会话 → 分支状态不可预测、文件冲突风险。规则：同一时间只允许一个 AI 会话操作仓库
 - [TASK-009/010] 施工包 Phase H 期望"无 WARN"是错配 → 文件迁移（git mv）不等于全局引用更新。迁移后 grep 必然发现历史文档中的旧路径引用，这是预期行为而非缺陷。施工包应区分"迁移完整性检查"和"引用一致性检查"，后者单独开卡
 - [TASK-009/010] 历史任务卡（TASK-008.yaml）引用旧路径 → 任务卡是历史工件，不应为迁移而篡改。正确做法：保留原引用 + 加注释说明路径已变更
+- [TASK-013] 并行会话在 feature 分支上留下未授权 commit → 即使内容"看起来有用"也必须 revert/reset。混入未授权提交会污染任务卡的 scope 边界，且可能复活已删除文件。检测手段：`git log` 发现非本会话 commit → 立即暂停
+- [TASK-013] `git stash` + `git reset --hard` + `git stash pop` 是清理污染分支的标准操作。feature 分支的 force push 是允许的，不违反铁律 13
+- [TASK-013] `git stash` 默认不保存 untracked 文件 → 重建比恢复快。重要 untracked 文件应 `git stash -u` 或先 `git add`
 
 <!-- 新增经验追加在上方，格式保持一致 -->
