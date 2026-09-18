@@ -92,7 +92,10 @@ namespace GenDashboard.Tests
             int n = 0;
             foreach (var line in lines)
             {
-                if (string.IsNullOrWhiteSpace(line)) continue;
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
                 int tab = line.IndexOf('\t');
                 string topic = tab >= 0 ? line.Substring(0, tab) : "";
                 string json = tab >= 0 ? line.Substring(tab + 1) : line;
@@ -105,12 +108,19 @@ namespace GenDashboard.Tests
             // 同一设备同一变量不应重复（upsert 生效）
             var keys = new HashSet<string>();
             foreach (DataRow r in dt.Rows)
+            {
                 Assert.True(keys.Add(r["Device"] + "|" + r["VarCode"]), "出现重复主键");
+            }
+
             // 已知变量应带地址码（spindleSpeed 在映射中）
             bool sawAddr = false;
             foreach (DataRow r in dt.Rows)
+            {
                 if (r["VarCode"].ToString() == "spindleSpeed" && r["AddrCode"].ToString().Contains("fanuc:40"))
+                {
                     sawAddr = true;
+                }
+            }
             Assert.True(sawAddr, "spindleSpeed 应解析出 fanuc:40 地址码");
         }
     }

@@ -31,12 +31,12 @@ charset = utf-8
 end_of_line = crlf
 
 # ===========================================
-# Roslynator 4.12.9 白名单 (TASK-012)
-# 仅对试点工程 (TASK-012 范围) 启用。
-# GenCollector / GenDashboard / WPF 留给 TASK-014 全仓推广。
+# Roslynator 4.12.9 白名单 (TASK-012 + TASK-014)
+# TASK-012: 试点工程 (ReliabilityTests + IoTPlatform.Core)
+# TASK-014: 全仓推广 (除 ArchitectureTests + LnkCollector_src + IoTPlatform.Core.Tests 空 csproj)
 # ===========================================
-[src/Backend/**/*.cs]
-[tests/ReliabilityTests/**/*.cs]
+[src/**/*.cs]
+[tests/**/*.cs]
 # --- 格式 (5 条) ---
 dotnet_diagnostic.RCS0023.severity = warning   # Blank line required between block statements and following statements
 dotnet_diagnostic.RCS0024.severity = warning   # Put constructor in a single line, or on multiple lines
@@ -57,12 +57,7 @@ dotnet_diagnostic.RCS1213.severity = warning   # Unused assignment
 dotnet_diagnostic.RCS1033.severity = warning   # Remove unnecessary 'using' directive
 dotnet_diagnostic.RCS1037.severity = warning   # Remove unnecessary empty constructor
 
-# 默认: 其它工程 (Collector / Frontend / ArchitectureTests / Tests) 不启用白名单规则
-[src/Collector/**/*.cs]
-[src/Frontend/**/*.cs]
-[tests/ArchitectureTests/**/*.cs]
-[tests/GenCollector.Tests/**/*.cs]
-[tests/GenDashboard.Tests/**/*.cs]
+# 默认: 不启用白名单规则 (空 csproj 或反编译对照源)
 [tests/IoTPlatform.Core.Tests/**/*.cs]
 dotnet_diagnostic.RCS0023.severity = none
 dotnet_diagnostic.RCS0024.severity = none
