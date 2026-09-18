@@ -1,0 +1,24 @@
+id: TASK-009
+title: "文档与配置集中化迁移（第一批）"
+status: ready
+created: 2026-09-18T00:00:00Z
+created_by: architect
+scope:
+  allow_write:
+    - docs/**
+    - AGENTS.md
+    - .githooks/**
+    - .github/workflows/**
+    - .harness/tasks/active/TASK-009.yaml
+  deny_write:
+    - src/**
+    - tests/**
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+notes: |
+  迁移源：仅迁移存在的文件（.specstory/config/engineering-rules.mdc, .harness/rules/lessons-learned.md, .githooks/pre-push, .githooks/commit-msg）。
+  不存在的文件（governance.md, red/TASK-003/, check-red-evidence.py 等）跳过，原因：PR 4 重做被放弃或尚未创建。
+  铁律 13 + 14 追加。AGENTS.md 重写。

@@ -16,5 +16,8 @@
 - [PR 4] 红态证据校验脚本未处理"卡为 done 状态"的跳过逻辑 → 校验脚本必须读取卡状态，done 卡不触发红态检查
 - [origin sync] 本地 main 与 origin 出现分叉前未检查 diff → 执行 `git pull` 前必须先 `git fetch` + 查看 diff stat
 - [harness] 任务卡 allow_write 路径写 `src/**` 通配符 → 必须用具体路径，防止执行者越权修改
+- [TASK-008] 架构师豁免授权未用 hook 认可的语法（[APPROVED-BY:] 标记）→ 豁免必须同时满足：①口头/文本明确授权 ②commit message 含 `[APPROVED-BY: <name>]`。架构师签发豁免时应直接提供完整 merge 命令含标记
+- [hook-design] commit-msg hook 的 protected-paths 检查与铁律豁免是两层独立机制 → 铁律豁免不等于 hook 豁免，两者需分别满足。未来考虑：hook 识别"一次性豁免"关键词自动放行，或架构师设 SKIP_PROTECTED_CHECK=1
+- [parallel-sessions] 同一仓库开两个并行 AI 会话 → 分支状态不可预测、文件冲突风险。规则：同一时间只允许一个 AI 会话操作仓库
 
 <!-- 新增经验追加在上方，格式保持一致 -->
