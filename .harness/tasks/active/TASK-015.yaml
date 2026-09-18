@@ -9,11 +9,20 @@ scope:
     - contracts/openapi.yaml
     - docs/architecture/mqtt-topics.md
     - contracts/schemas/telemetry.json
+    - contracts/schemas/sample-data.json
     - docs/architecture/data-models.md
     - .harness/tasks/active/TASK-015.yaml
+    # TASK-017: 铁律 12 强制每卡追加经验，allow 必须覆盖经验库
+    - docs/ai-workspace/rules/lessons-learned.md
   deny_write:
     - docs/ai-workspace/rules/engineering-rules.mdc
     - src/**/*.cs
+# TASK-017 终局预审：真实内容改动仅 299 行（--ignore-cr-at-eol），
+# 但 openapi.yaml 历史 CRLF blob 按 .gitattributes 规范化为 LF 产生 ~2204 行
+# 行尾虚高，待 TASK-020 让检查器忽略纯 EOL 后可把此预算收回 300。
+constraints:
+  max_lines_changed: 2600
+  max_files_changed: 10
 acceptance_tests:
   - tests/ArchitectureTests/ArchitectureTests.csproj
 done_when:
