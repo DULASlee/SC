@@ -24,5 +24,7 @@
 - [TASK-013] 并行会话在 feature 分支上留下未授权 commit → 即使内容"看起来有用"也必须 revert/reset。混入未授权提交会污染任务卡的 scope 边界，且可能复活已删除文件。检测手段：`git log` 发现非本会话 commit → 立即暂停
 - [TASK-013] `git stash` + `git reset --hard` + `git stash pop` 是清理污染分支的标准操作。feature 分支的 force push 是允许的，不违反铁律 13
 - [TASK-013] `git stash` 默认不保存 untracked 文件 → 重建比恢复快。重要 untracked 文件应 `git stash -u` 或先 `git add`
+- [TASK-017] 任务卡 allow_write 不含 lessons-learned.md 但铁律 12 强制修改它 → 每个合规 PR 必挂 L3 scope 门禁（4 个 PR 连续红灯）；卡模板与 active 卡必须包含该文件
+- [TASK-017] check-pr-scope 先查 deny 后查 allow 且卡内 allow/deny 区间重叠（TASK-012 `tests/**/*.cs`）→ allow 成死信；v2 已改为 allow 先行 + 重叠显式报 [CONFIG-CONFLICT]
 
 <!-- 新增经验追加在上方，格式保持一致 -->

@@ -12,6 +12,8 @@ scope:
     - .superpowers/PROJECT.md
     - harness/superpowers-install-report.md
     - .harness/tasks/active/TASK-011.yaml
+    # TASK-017: 铁律 12 强制每卡追加经验，allow 必须覆盖经验库
+    - docs/ai-workspace/rules/lessons-learned.md
   deny_write:
     - src/**
     - docs/ai-workspace/rules/engineering-rules.mdc
