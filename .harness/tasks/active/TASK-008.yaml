@@ -1,3 +1,5 @@
+# 注意：本卡创建时路径尚未迁移，scope 中引用的 .specstory/ 和 .harness/ 路径为历史记录。
+# TASK-009 已将这些路径迁至 docs/ai-workspace/。本卡历史状态保留，scope 不重写。
 id: TASK-008
 title: "经验沉淀机制落地（lessons-learned + 铁律 12）"
 status: ready
