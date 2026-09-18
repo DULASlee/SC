@@ -3,8 +3,29 @@ name: ci
 on:
   push:
     branches: [main, develop, 'feat/**']
+    paths:
+      # 触发 CI build 的路径（业务代码 / 测试 / 构建配置）
+      - 'src/**'
+      - 'tests/**'
+      - 'Directory.Build.props'
+      - 'Directory.Build.targets'
+      - '.editorconfig'
+      - 'BannedSymbols.txt'
+      - 'contracts/**'
+      - '*.csproj'
+      # docs/harness/superpowers 变更只触发 contract-consistency（节省 CI 资源）
   pull_request:
     branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'Directory.Build.props'
+      - 'Directory.Build.targets'
+      - '.editorconfig'
+      - 'BannedSymbols.txt'
+      - 'contracts/**'
+      - '*.csproj'
+      # docs/harness/superpowers 变更只触发 contract-consistency（节省 CI 资源）
 
 jobs:
   # L1-alpha 阶段建立的契约一致性检查
