@@ -1,37 +1,55 @@
 # 数据模型（Data Models）
 
 > 本文档定义平台核心数据模型，对应 Ditto Thing 模型、IoTDB 时序schema、MQTT 消息结构。
+>
+> **TASK-015 冻结版本 v1.0 (2026-09-18)** — 业务开发前置契约冻结
+>
+> 字段命名锁（camelCase）：`tenantId / siteId / lineId / deviceId / variableId`
+>
+> 单一真源（遥测 payload）：`contracts/schemas/telemetry.json`
+>
+> 时间戳锁：integer UTC milliseconds — drop 了所有 ISO8601 字符串
+>
+> 质量码锁：integer 0-3 — drop 了 string enum 和 IoTDB TEXT
+>
+> 已知开放问题（移到 TASK-016+）：
+> - AndonStatus enum 冲突（4 套）
+> - CommandStatus enum 冲突（OpenAPI vs MQTT）
+> - Ditto feature key (telemetry vs realtime)
+> - collectorId 跨契约不一致
+> - dataType 枚举顺序漂移（见 §2.1 / §8）
 
 ---
 
 ## 1. ID 策略
 
-### 1.1 层级 ID
+### 1.1 层级 ID（frozen v1.0）
 
-| 字段 | 类型 | 说明 | 示例 |
+| 字段 | 类型（frozen） | 说明 | 示例（frozen） |
 |------|------|------|------|
-| `tenant_id` | UUID | 租户唯一标识 | `550e8400-e29b-41d4-a716-446655440000` |
-| `site_id` | UUID | 站点唯一标识 | `6ba7b810-9dad-11d1-80b4-00c04fd430c8` |
-| `line_id` | UUID | 产线唯一标识 | `6ba7b811-9dad-11d1-80b4-00c04fd430c8` |
-| `device_id` | UUID 或复合ID | 设备唯一标识 | 制造商码+序列号组合（不可变） |
-| `variable_id` | string | 变量唯一标识 | `SpindleSpeed` (字母数字) |
+| `tenantId` | string | 租户唯一标识 | `tenant-a` |
+| `siteId` | string | 站点唯一标识 | `site-01` |
+| `lineId` | string | 产线唯一标识 | `line-01` |
+| `deviceId` | string | 设备唯一标识（plain string） | `CNC04` |
+| `variableId` | string | 变量唯一标识（模式 `[a-zA-Z][a-zA-Z0-9_]*`） | `SpindleSpeed` |
 
-### 1.2 设备 ID 组成
+> **冻结决策（v1.0）**：尽管 Section 1.1 历史声明为 UUID 类型，但**所有实际示例**（mqtt-topics.md、GenCollector payload、L1-α telemetry.json）都使用 plain string 格式。**冻结为 plain string**。UUID 方案废弃（不一致）。任何内部 ID 系统的迁移（如要 UUID）需新建任务卡，不能在 TASK-016 业务卡中暗改。
 
-设备 ID 由制造商码 + 序列号组合生成，确保全球唯一且不可变：
+### 1.2 设备 ID 组成（frozen v1.0）
 
-```
-device_id = "{manufacturer_code}_{serial_number}"
-```
+设备 ID **冻结为 plain string**（`CNC04` / `DHH-02` / `MITS_12345678`）：
 
-示例：`MITS_12345678` (三菱加工中心，序列号 12345678)
+- 实际生产值由设备采集器在 `config.json` 的 `mqttDeviceId` 字段定义
+- 不强制制造商码+序列号组合
+- 复合 ID 格式（`MITS_12345678`）允许但非强制
+- 同一 `tenantId` 下 `deviceId` 必须唯一
 
-### 1.3 变量 ID 命名
+### 1.3 变量 ID 命名（frozen v1.0）
 
 变量 ID 在同一设备内唯一，允许使用字母、数字、下划线：
 
 ```
-variable_id = [a-zA-Z][a-zA-Z0-9_]*
+variableId = [a-zA-Z][a-zA-Z0-9_]*
 ```
 
 示例：`SpindleSpeed`, `Axis_X`, `RunStatus_1`

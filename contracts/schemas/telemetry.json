@@ -1,13 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://industrial-platform.local/contracts/schemas/telemetry.json",
-  "title": "TelemetryPayload",
-  "description": "设备遥测 payload（与 GenCollector/CollectorEngine.BuildPayload 一致）。单一真理来源 — 派生视图（openapi/asyncapi/mqtt）必须 $ref 此文件，不得重复定义字段。",
+  "$comment": "DO NOT MODIFY required field names (MeasEncoding/MeasName/TimeStamp/DeviceEncoding) — L1-α contract-consistency.py hardcodes them as a drift detection mechanism. To change payload schema, create a new schema file.",
+  "title": "TelemetryPayload-L1a (frozen L1-α)",
+  "description": "L1-α 最小骨架 schema。**冻结**：required = [MeasEncoding, MeasName, value, TimeStamp, DeviceEncoding] 用于 L1-α 一致性校验 (scripts/check-contract-consistency.py 硬编码)。\n\n**业务代码请使用 `sample-data.json`** — 那个 schema 对齐 src/Backend/IoTPlatform.Core/Models/SampleData.cs 的当前真实 C# DTO 字段命名。\n\nTASK-015 已知问题：telemetry.json 是 L1-α 时代的旧 schema（与 SampleData 字段命名不同），待 TASK-016 整体迁移。",
+  "version": "L1-α-frozen",
   "type": "object",
   "properties": {
     "properties": {
       "type": "array",
-      "description": "一组遥测点（与 GenCollector 输出 1:1）",
+      "description": "一组遥测点（与 GenCollector/CollectorEngine.BuildPayload 一致 — L1-α 旧格式）",
       "items": {
         "type": "object",
         "properties": {
