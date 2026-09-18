@@ -65,3 +65,18 @@ project.lock.json
 _Resharper*/
 _ReSharper*/
 *.dotCover
+
+# 反编译工具与中间产物（不入仓，仅本地保留）
+.tools/
+ghidra-projects/
+.decomp/
+*_ghidra/
+*.rep/
+*.gbf
+
+# 设备二进制目录（不入仓，仅本地保留）
+CNC/
+CNC04/
+DHH02/
+DHH04/
+MZS01/
