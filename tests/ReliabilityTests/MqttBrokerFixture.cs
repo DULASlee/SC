@@ -48,21 +48,37 @@ public sealed class MqttBrokerFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (_broker is not null) await _broker.DisposeAsync();
-        if (_toxiproxy is not null) await _toxiproxy.DisposeAsync();
+        if (_broker is not null)
+        {
+            await _broker.DisposeAsync();
+        }
+
+        if (_toxiproxy is not null)
+        {
+            await _toxiproxy.DisposeAsync();
+        }
+
         await _network.DisposeAsync();
     }
 
     /// <summary>TCP 端口可达性测试（不依赖 Mosquitto/Toxiproxy 业务协议）。</summary>
     public async Task<bool> CanHandshakeAsync()
     {
-        if (_toxiproxy is null) return false;
-        var port = ToxiproxyMappedPort ?? 0;
-        if (port == 0) return false;
-        using var tcp = new TcpClient();
-        var connect = tcp.ConnectAsync(_toxiproxy.Hostname, port);
-        var timeout = Task.Delay(TimeSpan.FromSeconds(2));
-        var first = await Task.WhenAny(connect, timeout);
+        if (_toxiproxy is null)
+        {
+            return false;
+        }
+
+        ushort port = ToxiproxyMappedPort ?? 0;
+        if (port == 0)
+        {
+            return false;
+        }
+
+        using TcpClient tcp = new TcpClient();
+        Task connect = tcp.ConnectAsync(_toxiproxy.Hostname, port);
+        Task timeout = Task.Delay(TimeSpan.FromSeconds(2));
+        Task first = await Task.WhenAny(connect, timeout);
         return first == connect && tcp.Connected;
     }
 }

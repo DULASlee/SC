@@ -21,7 +21,10 @@ public abstract class BaseAdapter : IDeviceAdapter
 
     public async Task<bool> ConnectAsync(DeviceConnectionConfig config, CancellationToken ct = default)
     {
-        if (_disposed) throw new ObjectDisposedException(GetType().Name);
+        if (_disposed)
+        {
+            throw new ObjectDisposedException(GetType().Name);
+        }
         try
         {
             IsConnected = false;
@@ -38,14 +41,28 @@ public abstract class BaseAdapter : IDeviceAdapter
 
     public async Task DisconnectAsync(CancellationToken ct = default)
     {
-        if (!IsConnected) return;
-        try { await DisconnectCoreAsync(ct).ConfigureAwait(false); }
-        finally { IsConnected = false; CurrentConfig = null; }
+        if (!IsConnected)
+        {
+            return;
+        }
+
+        try
+        {
+            await DisconnectCoreAsync(ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            IsConnected = false;
+            CurrentConfig = null;
+        }
     }
 
     public async Task<TagReadResult> ReadTagAsync(TagDefinition tag, CancellationToken ct = default)
     {
-        if (!IsConnected) return TagReadResult.Failure(tag, "Not connected", TimeSpan.Zero);
+        if (!IsConnected)
+        {
+            return TagReadResult.Failure(tag, "Not connected", TimeSpan.Zero);
+        }
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
@@ -66,8 +83,16 @@ public abstract class BaseAdapter : IDeviceAdapter
         var list = new System.Collections.Generic.List<TagReadResult>();
         foreach (var tag in tags)
         {
-            if (ct.IsCancellationRequested) break;
-            if (!tag.Enabled) continue;
+            if (ct.IsCancellationRequested)
+            {
+                break;
+            }
+
+            if (!tag.Enabled)
+            {
+                continue;
+            }
+
             list.Add(await ReadTagAsync(tag, ct).ConfigureAwait(false));
         }
         return list;
@@ -75,9 +100,19 @@ public abstract class BaseAdapter : IDeviceAdapter
 
     public async Task<bool> WriteTagAsync(TagDefinition tag, object value, CancellationToken ct = default)
     {
-        if (!IsConnected) return false;
-        try { return await WriteTagCoreAsync(tag, value, ct).ConfigureAwait(false); }
-        catch { return false; }
+        if (!IsConnected)
+        {
+            return false;
+        }
+
+        try
+        {
+            return await WriteTagCoreAsync(tag, value, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>子类实现：协议特定的连接逻辑。</summary>
@@ -94,9 +129,19 @@ public abstract class BaseAdapter : IDeviceAdapter
 
     public async ValueTask DisposeAsync()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
         _disposed = true;
-        try { await DisconnectAsync().ConfigureAwait(false); } catch { /* ignore */ }
+        try
+        {
+            await DisconnectAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            /* ignore */
+        }
         await DisposeCoreAsync().ConfigureAwait(false);
         GC.SuppressFinalize(this);
     }
