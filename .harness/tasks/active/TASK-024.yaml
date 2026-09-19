@@ -1,0 +1,55 @@
+id: TASK-024
+title: "声明项 AT-0 扫描：实现或删除 + hook 输出编码一致性"
+status: ready
+approver: architect
+created: 2026-09-19T15:00:00Z
+created_by: architect
+
+scope:
+  allow_write:
+    - .githooks/pre-commit
+    - .harness/scripts/check-protected-paths.py
+    - .harness/scripts/check-local-scope.py
+    - .harness/scripts/check_local_scope_compat.py
+    - docs/ai-workspace/hooks/commit-msg
+    - docs/ai-workspace/hooks/check_approval.py
+    - .harness/tests/test_check_approval.py
+    - .harness/tests/test_check_pr_scope.py
+    - .harness/tasks/active/TASK-024.yaml
+    - docs/ai-workspace/rules/lessons-learned.md
+    - docs/superpowers/spec/TASK-024-spec.md
+    - docs/testing/red/TASK-024/**
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 300
+  max_files_changed: 12
+
+depends_on: []
+
+references:
+  - docs/superpowers/spec/TASK-024-spec.md (裁定清单 C1-C7)
+  - .harness/tasks/active/TASK-022-harness-scripts-cover.yaml (checker 脚本集授权先例)
+
+notes: |
+  架构师裁定（2026-09-19）：023 保持 CLOSED，「Windows/Git Bash/Python stdout-stderr
+  编码一致性」归入 024；不得为输出编码回头改 023 核心授权逻辑。
+  AT-0 处置原则：声明了但不执行的项 → 实现或删除（装饰性防护比没有更危险）。
+  执行以 spec 裁定清单 C1-C7 为准：架构师对每项签发「实现/删除/修订/维持」后开工；
+  未签发项保持 pending-disposition。
+  验收按 022 先例：acceptance_tests 指向真实可跑工程（ArchitectureTests，dotnet test 3/3）；
+  本卡专属验收 = AT-0 扫描报告 + 逐项红绿证据（docs/testing/red/TASK-024/）。
+  铁律 15（执行器链路 canary）：本卡不触 executor_argv/执行机器，无需 probe。
