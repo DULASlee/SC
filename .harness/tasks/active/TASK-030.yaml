@@ -47,5 +47,8 @@ notes: |
   边界（023/024 冻结面）：只改输出内容，不改授权判定 / 保护路径集 / exit code /
   fail-closed 行为 / SKIP_PROTECTED_CHECK 权限边界。
   验收（022 先例）：acceptance_tests = 真实可跑工程（ArchitectureTests，dotnet test 3/3）；
-  本卡专属证据 = 各脚本输出断言（无非 ASCII 字节），入 docs/testing/red/TASK-030/。
+  本卡专属证据 = 各脚本输出断言（无非 ASCII 字节）：
+  - 改前 baseline（非 ASCII 分布 + 三处故意违规改前即拦截生效）：docs/testing/red/TASK-030/baseline.md
+  - 改后 outcome（P1-P5 ALL PASS：ASCII 归零 + 3 项故意违规仍拦截）：docs/testing/red/TASK-030/outcome.md
+  - 重跑入口：python docs/testing/red/TASK-030/run_baseline.py / run_evidence.py
   铁律 15（执行器链路 canary）：本卡不触 executor_argv/执行机器，无需 probe。
