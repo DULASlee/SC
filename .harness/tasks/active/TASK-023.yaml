@@ -75,3 +75,8 @@ notes: |
   - 红态证据 docs/testing/red/TASK-023/：R1 常规前缀不再穿透；R2 无覆盖保护路径拒绝；
     G1 覆盖卡放行；G2 自生命周期放行；SKIP 通道；R3 dispatch 前置检查拒绝（单测）。
   - .harness/tests 全量单测绿（含 15 项 check_approval + 5 项 card_self_authorized 新测试）。
+  closeout（架构师 2026-09-19 裁定 R1-C：实施落地即归档，裁定非自报；done→archived 走 L3 收口）：
+  E1 移除实施落地 @28c0f06（commit-msg 纯 path 判定 + check_approval 自生命周期规则 +
+  12 卡 approver 迁移 + 机器写入点自覆盖契约 dispatch/pipeline + pipeline:310 注释修订 D1）；
+  红绿证据 docs/testing/red/TASK-023/（R1 常规前缀不再穿透 / R2 无覆盖拒绝 / G1-G3 放行 /
+  R4 真实遗留暂存拦截）；spec 实施补遗 docs/superpowers/spec/TASK-023-spec.md。
