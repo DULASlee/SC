@@ -26,6 +26,25 @@ SCHEMA_PATH = HARNESS_DIR / "schema" / "task-card.schema.json"
 ACTIVE_DIR = HARNESS_DIR / "tasks" / "active"
 
 
+def _collect_declarations(node, prefix=""):
+    """收集 json schema 中显式声明的字段路径（含嵌套 object + 数组 items）。"""
+    if not isinstance(node, dict):
+        return
+    props = node.get("properties")
+    if isinstance(props, dict):
+        for k, v in props.items():
+            yield f"{prefix}.{k}" if prefix else k
+            yield from _collect_declarations(v, f"{prefix}.{k}" if prefix else k)
+    if isinstance(node.get("items"), dict):
+        yield from _collect_declarations(node["items"], f"{prefix}[]")
+
+
+def load_declarations():
+    """返回 schema 已声明字段的全集（绝对路径前缀匹配用）。"""
+    schema = load_schema()
+    return set(_collect_declarations(schema))
+
+
 def load_schema():
     with open(SCHEMA_PATH, encoding="utf-8") as f:
         return json.load(f)
@@ -54,6 +73,18 @@ def validate_card(card_path, schema):
     except ValidationError as e:
         errors.append(f"Schema validation failed: {e.message} (path: {list(e.absolute_path)})")
         return errors
+
+    # 1.5 检测面自检回路（判据 4/5）：jsonschema 的 additionalProperties 是主防线
+    #     （笼统报错）；此处是「点名 + 修复指引」增强层——把笼统报错升级为指名道姓的
+    #     未声明字段清单，避免未来有人把 schema 误改宽松后检测面整体失效无人发现。
+    #     只在 schema 校验通过（或错误已收集）后追加，不改变 jsonschema 的拦截结果。
+    declared_top = {d.split(".")[0] for d in load_declarations()}
+    undeclared = [k for k in card.keys() if k not in declared_top]
+    if undeclared:
+        errors.append(
+            f"schema 未声明字段（检测面点名，schema 与数据分叉）：{undeclared}；"
+            f"请先在 {SCHEMA_PATH.name} 的 properties 中补定义再提交"
+        )
 
     # 2. 额外业务规则
     # 2.1 时间格式可解析
@@ -93,6 +124,10 @@ def main():
     schema = load_schema()
     if len(sys.argv) >= 2 and sys.argv[1] == "--all":
         cards = sorted(ACTIVE_DIR.glob("TASK-*.yaml"))
+        # 检测面：drafts 目录一并校验（堵「挪到 drafts 逃过检测」旁路，判据 4）
+        drafts_dir = ACTIVE_DIR.parent / "drafts"
+        if drafts_dir.is_dir():
+            cards += sorted(drafts_dir.glob("TASK-*.yaml"))
         if not cards:
             print("[WARN] no task cards under .harness/tasks/active/")
             sys.exit(0)

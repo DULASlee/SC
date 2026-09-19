@@ -64,3 +64,22 @@ notes: |
   关闭走 R1 语义（verify-all + 逐卡裁定），其 approver 缺失标记为「历史缺失」，
   不补填推断值。
   铁律 15：本卡不触 executor_argv/执行机器，无需 probe。
+  closeout（架构师 2026-09-19 P0 放行；R1-C 语义：实施落地即归档，裁定非自报；
+  状态保持 ready 待 L3 收口 verify-all + archive-task）：
+  - schema 回填 approver（type string + enum[architect]，防拼写幽灵条目）+ 检测面
+    点名层（validate-task-card 1.5 段：未声明字段指名道姓 + 修复指引；jsonschema
+    additionalProperties:false 仍为主防线，点名层为可读性增强 + 未来 schema 误改
+    宽松时的兜底，判据 4/5 分层设计已记录）。
+  - 判据 5 故意违规测试：docs/testing/red/TASK-033/run_criterion5.py（A 幽灵字段被拒
+    / B 枚举外 approver 被拒 / C 合法基线 PASS / A2 approver=architect PASS），
+    结果 docs/testing/red/TASK-033/criterion5.md（修复前 FAIL → 修复后 ALL PASS）。
+  - 判据 2 回填清单：docs/testing/red/TASK-033/backfill-report.md（全 active+drafts
+    逐卡：缺 approver=1 张即 TASK-001 draft；in-progress 历史卡 0 张缺——18 张
+    approver 均已在 023 迁移写入，无「历史缺失」需标记项，Q3 值域=architect 单值）。
+  - 判据 3：validate --all 全 OK（18+1 卡，含 drafts 扫描）；CI validate job 转绿。
+  - 判据 4 自检回路：新增 3 项单测（test_validate_task_card：ghost_field 拦截点名 /
+    枚举违规拒绝 / 已声明字段通过），套件 139/139。
+  - 红灯成因归档（架构师「为何未被更早捕获」之问）：28c0f06 批量写 approver 时
+    schema 未同步 → 分叉静默 3 轮；根因 = 023 施工时 validate 无逐字段声明检测
+    （additionalProperties 笼统报错不点名）→ 本卡点名层 + drafts 扫描 + 判据 5
+    故意违规测试三处堵漏，下次同型分叉在提交前即被点名拦截。

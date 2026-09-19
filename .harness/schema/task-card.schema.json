@@ -119,7 +119,8 @@
     },
     "approver": {
       "type": "string",
-      "description": "架构师审批人。触碰受保护路径的提交需覆盖卡含非空 approver"
+      "description": "架构师审批人。触碰受保护路径的提交需覆盖卡含非空 approver",
+      "enum": ["architect"]
     }
   }
 }
