@@ -56,6 +56,23 @@ lessons 去向（架构师裁定）：**B**——20 行归位 + P4/P5 合并为 
 「3」= 治理改动波间隔上界（029/023/022/024 四轮连续触碰 5 脚本集为实证）；
 永不触发则重审机制本身，不调数字。
 
+### R5（本轮新增，2026-09-19）事故记录 + R1-C 执行记录
+
+- **事故**：批量 PowerShell 注入 4 张卡 closeout notes 时，`WriteAllText` 写回破坏
+  TASK-023/024/030/031 的 YAML 块标量缩进（notes 段 2 空格缩进丢失）→ 门禁
+  `validate --all` 当场拦截 4 张卡，4 次 pre-commit 全部 FAIL；循环中 4 次
+  `git add` 在门禁失败后仍把损坏版本推入暂存区（add 不跑门禁）→ 暂存区污染。
+  恢复：`git restore --staged` ×4 + `git checkout --` ×4（worktree 与 index 均回到
+  提交时干净态，`validate --all` 全 OK 复核通过）。
+- **处置**：closeout notes 改用**逐卡手工 Edit**重做（4 commit，各一卡，门禁全绿）：
+  165b97c (023) / 91cbdda (024) / f8f0b56 (030) / 4a6bc42 (031)。状态保持 ready
+  （R1-C 语义：裁定记录非状态翻转，done→archived 走 L3 收口）。
+- **教训**（并入 024 精神——声明项实现前取证；机器门禁已证明其价值：损坏在
+  提交前被 `validate --all` 拦下，未进 HEAD）：
+  ① 对含块标量（`|`）的 YAML 禁用脚本整体写回，插入一律走文本级 Edit（锚点定位）；
+  ② 循环中 `git add` 必须跟随门禁结果（FAIL 即中止循环，不得继续 add）；
+  ③ 暂存区污染处置 SOP = `git restore --staged <paths>` + `git checkout -- <paths>`。
+
 ## §0 术语确认（架构师纠正已吸收）
 
 FROZEN 约束的准确表述：**FROZEN 卡的 allow_write 处于关闭状态，任何写入请求（无论内容多相关）都无授权通道**——是授权机制问题，不是内容匹配问题。因此本清单对 025-028 相关条目一律采用「新开独立卡 + 待开卡标记不抢跑」，不借 FROZEN 卡通道。
