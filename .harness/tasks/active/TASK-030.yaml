@@ -52,3 +52,7 @@ notes: |
   - 改后 outcome（P1-P5 ALL PASS：ASCII 归零 + 3 项故意违规仍拦截）：docs/testing/red/TASK-030/outcome.md
   - 重跑入口：python docs/testing/red/TASK-030/run_baseline.py / run_evidence.py
   铁律 15（执行器链路 canary）：本卡不触 executor_argv/执行机器，无需 probe。
+  closeout（架构师 2026-09-19 裁定 R1-C：实施落地即归档，裁定非自报）：
+  C3 余面 ASCII 化落地 @402f735（pre-push/validate-task-card/check-contract-consistency
+  输出归零 + 指令等价无降级 + 故意违规 3 项拦截仍生效 outcome.md P1-P5 + 6 项单测）；
+  卡面证据定位链接补录 @4805ae1。证据 docs/testing/red/TASK-030/（baseline.md / outcome.md）。
