@@ -1,7 +1,7 @@
 # 注意：本卡创建时正在执行迁移（自指）。notes 中引用的源路径（.specstory/, .harness/）为迁移前快照，迁移完成后已不存在。
 id: TASK-009
 title: "文档与配置集中化迁移（第一批）"
-status: ready
+status: in-progress
 created: 2026-09-18T00:00:00Z
 created_by: architect
 scope:
