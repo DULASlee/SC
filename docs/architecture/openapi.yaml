@@ -2,6 +2,23 @@ openapi: 3.0.3
 info:
   title: GenPlatform API
   description: |
+    ⚠️  **TASK-015 冻结说明 (2026-09-18)**
+
+    本文件是**设计参考文档**（1102 行完整契约）。**业务开发请使用 `contracts/openapi.yaml`**（L1-α 骨架 + 冻结端点）。
+
+    ## 冻结字段命名（v1.0）
+    - camelCase: `tenantId / siteId / lineId / deviceId / variableId`
+    - 时间戳: integer UTC milliseconds (drop `timestampIso`)
+    - 质量码: integer 0-3 (drop string enum)
+    - 单一真源 (遥测 payload): `../contracts/schemas/telemetry.json`
+
+    ## 已知开放问题（移到 TASK-016+）
+    - AndonStatus enum 冲突（4 套）
+    - CommandStatus enum 冲突（OpenAPI vs MQTT）
+    - Ditto feature key (telemetry vs realtime)
+    - collectorId 跨契约不一致
+    - siteId 在本文件部分 schema 中缺失
+
     通用工业采集平台 REST API + 实时事件流。
     认证方式：Bearer Token（JWT）。
     支持多租户，租户 ID 通过 token claim `tenant_id` 注入。

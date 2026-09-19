@@ -1,0 +1,51 @@
+id: TASK-015
+title: "契约冻结最小集：OpenAPI 收敛 + MQTT Topics 定稿 + data-models 对齐"
+status: ready
+created: 2026-09-18T00:00:00Z
+created_by: architect
+scope:
+  allow_write:
+    - docs/architecture/openapi.yaml
+    - contracts/openapi.yaml
+    - docs/architecture/mqtt-topics.md
+    - contracts/schemas/telemetry.json
+    - contracts/schemas/sample-data.json
+    - docs/architecture/data-models.md
+    - .harness/tasks/active/TASK-015.yaml
+    # TASK-017: 铁律 12 强制每卡追加经验，allow 必须覆盖经验库
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - docs/ai-workspace/rules/engineering-rules.mdc
+    - src/**/*.cs
+# TASK-017 终局预审：真实内容改动仅 299 行（--ignore-cr-at-eol），
+# 但 openapi.yaml 历史 CRLF blob 按 .gitattributes 规范化为 LF 产生 ~2204 行
+# 行尾虚高，待 TASK-020 让检查器忽略纯 EOL 后可把此预算收回 300。
+constraints:
+  max_lines_changed: 2600
+  max_files_changed: 10
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+  - "ci: contract_consistency"
+notes: |
+  ## 冻结决策（基于现有代码 + 11 处漂移）
+
+  ### 已决议（6 项）
+  1. **tenant_id** → camelCase `tenantId` (matches MQTT payload + L1-α schema)
+  2. **device_id** → plain string `deviceId` (matches GenCollector payload "CNC04")
+  3. **variable_id** → camelCase `variableId`, 模式 `[a-zA-Z][a-zA-Z0-9_]*`
+  4. **timestamp** → integer UTC milliseconds (drop timestampIso from MQTT)
+  5. **quality** → integer 0-3 (GOOD/UNCERTAIN/BAD/OFFLINE) - drop string enum
+  6. **telemetry payload** → contracts/schemas/telemetry.json 为唯一真源
+
+  ### 开放问题（移到 TASK-016+）
+  - AndonStatus enum 冲突（4 套）
+  - CommandStatus enum 冲突（OpenAPI vs MQTT）
+  - Ditto feature key (telemetry vs realtime)
+  - siteId 在 OpenAPI/AsyncAPI 缺失
+  - collectorId 跨契约不一致
+
+  ### 不做
+  - 不写业务代码
+  - 不改 C# 代码
+  - AsyncAPI/alarm-state-machine 留给 TASK-016

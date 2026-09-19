@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://industrial-platform.local/contracts/schemas/sample-data.json",
+  "title": "SampleData (frozen v1.0)",
+  "description": "GenCollector 采样数据 payload — 与 src/Backend/IoTPlatform.Core/Models/SampleData.cs 1:1 对齐。\n\n冻结版本 v1.0 (2026-09-18 TASK-015)。\n\n单一真源（业务代码）：C# DTO SampleData。\n派生视图（OpenAPI/AsyncAPI/MQTT）必须 $ref 此 schema。",
+  "version": "1.0",
+  "type": "object",
+  "required": ["deviceId", "timestamp", "values", "errors"],
+  "additionalProperties": false,
+  "properties": {
+    "deviceId": {
+      "type": "string",
+      "description": "设备 MQTT ID（与 GenCollector config.json 的 mqttDeviceId 对齐；现网示例：CNC04）",
+      "maxLength": 64
+    },
+    "timestamp": {
+      "type": "integer",
+      "description": "采集时间戳（Unix UTC milliseconds，int64）。所有时间戳统一为此格式，无 timestampIso 等冗余字段",
+      "minimum": 0
+    },
+    "elapsedMs": {
+      "type": "number",
+      "description": "采样耗时（毫秒），用于性能监控",
+      "minimum": 0
+    },
+    "values": {
+      "type": "object",
+      "description": "成功的变量值（key = 变量名，模式 [a-zA-Z][a-zA-Z0-9_]*；value = number/string/bool 之一，由设备采集器决定）",
+      "additionalProperties": {
+        "type": ["number", "string", "boolean", "null"]
+      }
+    },
+    "errors": {
+      "type": "object",
+      "description": "读取失败的变量（key = 变量名；value = 错误消息字符串）",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  }
+}
