@@ -1,0 +1,24 @@
+# .harness/dispatch.yaml
+# 中央配置：换模型只改 model 这一行。dispatcher 把 model 打进运行记录 + prompt 头。
+model: openrouter/deepseek/deepseek-v4-flash-0731:free
+
+# 执行器命令模板，{prompt} 会被替换为派发 prompt（引用上下文文件绝对路径，不内联全文）。
+executor_argv: ["dsh", "--profile", "headless", "{prompt}"]
+
+# 并发槽位：同时 running 的任务数上限。先锁 3，跑顺再谈放大。
+# pilot 期间降为 1（B′：要信号不要吞吐），全绿后再回 3。
+concurrency: 1
+# 单任务失败重试上限（含首次，共 1+3 次执行）。超限 → status blocked。
+max_retries: 3
+# 单次 dispatch 最多新派发任务数（预算熔断第一层）。
+max_tasks_per_run: 10
+
+worktree_root: .harness/worktrees
+runs_dir: .harness/runs
+
+model_fallbacks: []
+loop_interval_seconds: 120
+prompt_budget: {failure_note_max_chars: 2000, skill_max_bytes: 12288}
+pr_enabled: false
+skills_dir: C:/Users/admin/.claude/skills/superpowers
+dsh_settings: null
