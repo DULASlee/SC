@@ -12,6 +12,8 @@ created_by: architect
 scope:
   allow_write:
     - src/<模块>/**
+    # TASK-017: 铁律 12 强制每卡追加经验，allow_write 必须包含经验库
+    - docs/ai-workspace/rules/lessons-learned.md
   deny_write:
     - tests/**
     - contracts/**

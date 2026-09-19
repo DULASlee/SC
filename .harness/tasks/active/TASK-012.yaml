@@ -12,11 +12,14 @@ scope:
     - src/Backend/IoTPlatform.Core/**/*.cs
     - src/Backend/IoTPlatform.Core/**/*.csproj
     - .harness/tasks/active/TASK-012.yaml
+    # TASK-017: 铁律 12 强制每卡追加经验，allow 必须覆盖经验库
+    - docs/ai-workspace/rules/lessons-learned.md
   deny_write:
+    # TASK-017 修复：原 deny 含 tests/**/*.cs，与 allow tests/ReliabilityTests/** 重叠，
+    # 导致 allow 成死信（deny 先行）。allow 本就只放行 ReliabilityTests + Core，删除该条。
     - docs/ai-workspace/rules/engineering-rules.mdc
     - src/Collector/**/*.cs
     - src/Frontend/**/*.cs
-    - tests/**/*.cs
 acceptance_tests:
   - tests/ArchitectureTests/ArchitectureTests.csproj
 done_when:
