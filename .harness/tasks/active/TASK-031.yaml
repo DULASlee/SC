@@ -49,3 +49,7 @@ notes: |
   3. 若扫描发现需改规则语义或新增规则的项 → 停手报告架构师，不在本卡内扩面；
   4. 证据入 docs/testing/red/TASK-031/（grep 零残留 + 逐条修改前后对照）。
   验收（022 先例）：acceptance_tests = 真实可跑工程（ArchitectureTests，dotnet test 3/3）。
+  closeout（架构师 2026-09-19 裁定 R1-C：实施落地即归档，裁定非自报）：
+  governance.md 事实修订落地 @0152d7f（唯一 A 类 L24：拦截工具失实陈述 → 现行模型，
+  1 行 diff，规则语义未变；B 类 0 / C 类 0，未触发另开治理修订卡条件）。
+  过程记录 docs/testing/red/TASK-031/process-record.md（022 基准核验 + 逐条 A/B/C 处理清单）。
