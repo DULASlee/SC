@@ -116,6 +116,10 @@
     "pre_approved": {
       "type": "boolean",
       "description": "是否已预审批通过，可跳过部分门禁"
+    },
+    "approver": {
+      "type": "string",
+      "description": "架构师审批人。触碰受保护路径的提交需覆盖卡含非空 approver"
     }
   }
 }

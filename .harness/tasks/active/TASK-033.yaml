@@ -1,0 +1,66 @@
+id: TASK-033
+title: "schema 回填 approver 字段 + 检测面自检回路（P0 解红灯）"
+status: ready
+approver: architect
+created: 2026-09-19T17:00:00Z
+created_by: architect
+
+scope:
+  allow_write:
+    - .harness/schema/task-card.schema.json
+    - .harness/scripts/validate-task-card.py
+    - .harness/tests/test_validate_task_card.py
+    - .harness/tasks/active/TASK-033.yaml
+    - docs/ai-workspace/rules/lessons-learned.md
+    - docs/testing/red/TASK-033/**
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 200
+  max_files_changed: 8
+
+depends_on: []
+
+references:
+  - docs/testing/red/RECON-CLEANUP/recon-list.md (§11 红灯定位实证 + R2 判据)
+
+notes: |
+  架构师 P0 放行（裁定 R2 + 判据 5 + additionalProperties 三问先行确认）。
+  红灯定位（recon-list §11）：分叉起始 28c0f06（023 批量写 approver 未同步 schema）；
+  性质 = 「schema 失实 + 检测面缺口」复合红灯，两件事分开修：
+  - 数据错误（schema 描述与现状不符）→ 本卡主修复：schema 增补 approver 字段定义。
+  - 机制缺口（门禁判据不覆盖「字段未声明」）→ 本卡判据 4/5 自检回路：
+    补 validate 的逐字段声明校验 + 故意违规测试证明回路有效。
+  additionalProperties 三问确认结果（架构师要求开工前 3 分钟确认）：
+  Q1 HEAD schema 无 approver 定义（实锤）；Q2 工作树 +4 行 diff = 字段定义本身
+  （随本卡提交，worktree 变更归 033）；Q3 18 张卡 approver 值域仅 architect
+  （单一合法值，枚举约束 = 已声明角色名清单，防拼写幽灵条目）。
+  schema 顶层/scope/constraints 均 additionalProperties:false → 属架构师决策树第 3 行
+  「validate 仍放行 = 门禁本身 bug」：本卡顺序 = 先修 validate 检测逻辑，再合入
+  schema 字段定义（顺序反了则修复无法被验证）。
+  判据（架构师钉死 1-5，本卡执行）：
+  1. schema 增补 approver（type string + 枚举值约束：仅 architect，防拼写幽灵）；
+  2. 全仓 yaml 跑一遍校验产出「缺字段/未声明」清单（回填集 = recon-list §11 的 18 张，
+     回填值来源逐卡记录：approver=architect 为 023 迁移签发记录，非新造）；
+  3. CI validate job 转绿 + git show HEAD schema grep approver >= 1；
+  4. schema 自检回路判定（防 schema-of-schema 失实）；
+  5. 故意违规测试：临时卡加 schema 未声明字段 → validate 必 FAIL（临时文件，不进任何卡，
+     结果入 closeout notes——与 030 同源逻辑：改了判定路径必须证明判定会触发）。
+  回填集 18 张处置边界（架构师裁定）：本卡只产出 schema 定义 + 检测面 + 回填清单；
+  18 张卡的 approver 字段已在 023 迁移写入（存量），11 张 in-progress 历史卡的
+  关闭走 R1 语义（verify-all + 逐卡裁定），其 approver 缺失标记为「历史缺失」，
+  不补填推断值。
+  铁律 15：本卡不触 executor_argv/执行机器，无需 probe。
