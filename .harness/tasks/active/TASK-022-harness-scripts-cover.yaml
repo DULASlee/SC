@@ -1,0 +1,70 @@
+id: TASK-022
+title: "治理机器文件 scope 覆盖：dispatcher/poll/hooks/checker 脚本集"
+status: ready
+approver: architect
+created: 2026-09-19T09:00:00Z
+created_by: architect
+
+scope:
+  allow_write:
+    - .harness/scripts/dispatch.py
+    - .harness/scripts/poll.py
+    - .harness/scripts/check-pr-scope.py
+    - .harness/scripts/check-protected-paths.py
+    - .harness/scripts/check-local-scope.py
+    - .harness/scripts/check_local_scope_compat.py
+    - .harness/tasks/active/TASK-022-harness-scripts-cover.yaml
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 300
+  max_files_changed: 10
+
+depends_on: []
+
+references:
+  - .harness/scripts/dispatch.py
+  - .harness/scripts/poll.py
+  - .harness/scripts/check-pr-scope.py
+  - .harness/scripts/check-protected-paths.py
+  - .harness/scripts/check-local-scope.py
+  - .harness/scripts/check_local_scope_compat.py
+
+notes: |
+  ## 背景
+  .harness/scripts/** 下的治理机器文件（dispatcher=dispatch.py、poll=poll.py、
+  hooks/checker=check-pr-scope.py、check-protected-paths.py、check-local-scope.py、
+  check_local_scope_compat.py）没有任何任务卡覆盖其 allow_write，
+  触碰这些文件的 PR 在 check-pr-scope 门禁必红（OUT-OF-SCOPE）。
+  本卡精确枚举上述 6 个文件（逐个核对存在），为后续治理脚本维修提供授权卡。
+
+  ## 范围说明
+  - allow 精确到文件，不用 .harness/scripts/** 通配，避免把 archive-task.py、
+    canary.py、loop.py 等非本次目标文件顺带授权。
+  - allow 含本卡 active 路径（TASK-022 裁定：按实际后缀名 TASK-022-harness-scripts-cover.yaml）。
+  - deny 照 TASK-017/TASK-020 模板写 src/**、tests/**、contracts/**，
+    与 allow 无重叠，不触发 [CONFIG-CONFLICT]（deny 优先）。
+
+  ## 023 配套裁定（架构师，2026-09-19）
+  - 023 后 .harness/** 纯 path 判定：本卡 ready + approver: architect（签发记录）+
+    自覆盖 allow_write，可授权 dispatch/poll/checker 脚本及本卡自身文件的提交。
+  - 有限解冻窗口（022 窄窗口裁定）：仅限本卡当前 allow_write 已覆盖的文件恢复提交；
+    按精确文件恢复，不允许 .* / 目录通配扩权；不在射程的文件
+    （dispatch.yaml/schema/canary.py/modelswap.py/replan.py/runs.py/
+    PILOT-CHECKLIST.md/test_gates.py 等）必须由对应新卡覆盖后再提交。
+
+  ## 验收（真实可验证）
+  - tests/ArchitectureTests/ArchitectureTests.csproj 存在且 dotnet test 通过（3/3）。
+  - 对应脚本单测存在且通过：.harness/tests/test_dispatch.py、.harness/tests/test_poll.py。
+  - 本卡 active 后，触碰本卡 allow 文件的提交在 check_approval 门禁放行。

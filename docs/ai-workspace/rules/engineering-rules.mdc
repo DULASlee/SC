@@ -163,6 +163,12 @@ ADR 格式要求：放在 `docs/adr/` 目录下，包含背景、决策、后果
 
 ---
 
+## 15. 执行器链路 canary
+
+任何改动 executor_argv（含命令构造方式、垫片、包裹层，不只参数值）、更换执行机器、更换 Node 大版本后，必须先完成一次 alive-probe 级真 headless 派发并留证（RUNS 记录 + 真实 exit code），方可恢复常规 dispatch。probe 未过，禁止 dispatch。
+
+---
+
 ## 违规处理
 
 违反本铁律：

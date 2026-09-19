@@ -25,12 +25,32 @@ from check_local_scope_compat import glob_to_regex  # noqa: E402
 from dispatch import (  # noqa: E402  复用派发逻辑与卡状态提交，避免重复实现
     load_config, load_card, spawn_attempt, commit_card_status)
 from replan import plan_retry, sig_of  # noqa: E402  Phase2 重规划与 loop 病理
+from modelswap import (  # noqa: E402
+    DEFAULT_SETTINGS, maybe_restore, read_selection, verify_selection)
 
 SCRIPTS_DIR = HARNESS_DIR / "scripts"
 ACTIVE_DIR = HARNESS_DIR / "tasks" / "active"
 
 # sig_history 只保留最近 N 条，防无限增长导致 RUNS.jsonl 膨胀。
 SIG_HISTORY_KEEP = 20
+
+# 上游故障指纹（不分大小写）：命中即上游账本，不记病理、不耗预算。
+# 注意：不用裸 "503" 子串（"port 8083" 等端口数字会误命中），只认短语。
+UPSTREAM_PATTERNS = (
+    "no healthy upstream",
+    "provider returned error",
+    "provider_overloaded",
+    "no healthy provider",
+)
+
+# 上游连续故障上限：连续达此次数则标 blocked 交人工，防无限重试。
+UPSTREAM_MAX_CONSECUTIVE = 5
+
+
+def is_upstream_fault(stderr: str) -> bool:
+    """stderr 是否为上游故障（匹配即 True，不分大小写）。"""
+    s = (stderr or "").lower()
+    return any(p in s for p in UPSTREAM_PATTERNS)
 
 
 def run(cmd: list[str], cwd: Path) -> tuple[int, str, str]:
@@ -171,28 +191,126 @@ def _preflight_env_ok(running) -> bool:
     return True  # 无卡可探活，交给逐条处理
 
 
+def _dsh_settings_path(cfg: dict) -> Path:
+    raw = cfg.get("dsh_settings")
+    return Path(raw) if raw else DEFAULT_SETTINGS
+
+
+def finalize_model_restore(sp: Path, store: RunsStore,
+                           just_finished: list[dict]) -> tuple | None:
+    """收尾：maybe_restore 后调 verify，不符则 WARN + 写该轮 RUNS note。
+
+    返回恢复到的 (provider, model)，无需恢复时返回 None。
+    """
+    sp = Path(sp)
+    restored = maybe_restore(sp, store, just_finished)
+    if restored is None:
+        return None
+    provider, model = restored
+    if verify_selection(sp, provider, model):
+        return restored
+    actual = read_selection(sp)
+    msg = (f"[WARN] 模型未恢复：期望 {provider}/{model}，"
+           f"实际 {actual[0]}/{actual[1]}")
+    print(msg)
+    for r in just_finished or []:
+        if isinstance(r, dict) and r.get("model_swapped"):
+            try:
+                prev_note = store.get(r["task_id"], r["attempt"]).get(
+                    "note") or ""
+                note = f"{prev_note}\n{msg}".strip() if prev_note else msg
+                store.update(r["task_id"], r["attempt"], note=note)
+            except (KeyError, AttributeError):
+                pass
+    return restored
+
+
+def _settle_upstream(rec: dict, cfg: dict, store: RunsStore,
+                     detail: str, tail: str, code) -> None:
+    """上游账本：不 append sig_history、不耗预算，打 upstream_fault。
+
+    verdict 置 fail-exec 照常重试，不升级模型、不记病理。
+    upstream_streak 连续计数：命中递增、达 UPSTREAM_MAX_CONSECUTIVE
+    则标 blocked（reason 含“上游连续故障达上限”），防无限重试。
+    """
+    tid, attempt = rec["task_id"], rec["attempt"]
+    verdict = "fail-exec"
+    hist = list(rec.get("sig_history") or [])
+    streak = int(rec.get("upstream_streak") or 0) + 1
+    if streak >= UPSTREAM_MAX_CONSECUTIVE:
+        set_card_status(tid, "blocked")
+        store.update(tid, attempt, sig_history=hist, upstream_fault=True,
+                     upstream_streak=streak, status="blocked",
+                     verdict=verdict, exit_code=code)
+        print(f"[WARN] {tid} 上游连续故障达上限（连续 {streak} 次），"
+              f"已标 blocked，等架构师处理")
+        return
+    store.update(tid, attempt, sig_history=hist, upstream_fault=True,
+                 upstream_streak=streak)
+    print(f"[INFO] {tid} 上游故障（不记病理、不耗预算），"
+          f"verdict=fail-exec 照常重试")
+    if store.budget_attempts(tid) < 1 + cfg["max_retries"]:
+        card_path = ACTIVE_DIR / f"{tid}.yaml"
+        reset_worktree(Path(rec["worktree"]))
+        limit = cfg.get("prompt_budget", {}).get(
+            "failure_note_max_chars", 2000)
+        note = cap_text(f"{detail}\n{tail}".strip(), limit)
+        try:
+            spawn_attempt(tid, load_card(card_path), cfg, store, note,
+                          model_override=None)
+        except Exception as exc:  # noqa: BLE001  重派失败转人工
+            set_card_status(tid, "blocked")
+            store.update(tid, attempt, status="error", verdict=verdict,
+                         exit_code=code, sig_history=hist,
+                         upstream_fault=True, upstream_streak=streak)
+            print(f"[WARN] {tid} 上游故障重派失败，已标 blocked 交人工：{exc}")
+            return
+        store.update(tid, attempt, status="retrying", verdict=verdict,
+                     exit_code=code, sig_history=hist, upstream_fault=True,
+                     upstream_streak=streak)
+        try:
+            new_attempt = store.attempts(tid)
+            store.update(tid, new_attempt, upstream_streak=streak)
+        except KeyError:
+            pass
+        print(f"[INFO] {tid} 上游故障已复位 worktree 并重派新 attempt"
+              f"（不升级模型）")
+    else:
+        set_card_status(tid, "blocked")
+        store.update(tid, attempt, status="blocked", verdict=verdict,
+                     exit_code=code, sig_history=hist, upstream_fault=True,
+                     upstream_streak=streak)
+        print(f"[WARN] {tid} 上游故障但预算耗尽，已标 blocked，等架构师处理")
+
+
 def _settle(rec: dict, cfg: dict, store: RunsStore,
             verdict: str, detail: str, code) -> None:
     tid, attempt = rec["task_id"], rec["attempt"]
     if verdict == "pass":
         store.update(tid, attempt, status="awaiting-review",
-                     verdict="pass", exit_code=code)
+                     verdict="pass", exit_code=code, upstream_streak=0)
         print(f"[OK] {tid} 通过机器门禁 → awaiting-review，"
               f"等人类 verify-all.py 验收（poll 不写 done）")
         return
     card_path = ACTIVE_DIR / f"{tid}.yaml"
     tail = tail_stderr(Path(rec["run_dir"]))
+    if is_upstream_fault(tail):
+        _settle_upstream(rec, cfg, store, detail, tail, code)
+        return
     sig = sig_of(verdict, code, tail)
     hist = ((rec.get("sig_history") or []) + [sig])[-SIG_HISTORY_KEEP:]
-    store.update(tid, attempt, sig_history=hist)
-    if store.attempts(tid) < 1 + cfg["max_retries"]:
-        decision = plan_retry(hist, store.attempts(tid),
+    store.update(tid, attempt, sig_history=hist, upstream_streak=0)
+    if store.budget_attempts(tid) < 1 + cfg["max_retries"]:
+        decision = plan_retry(hist, store.budget_attempts(tid),
                               1 + cfg["max_retries"],
-                              cfg.get("model_fallbacks") or [])
+                              cfg.get("model_fallbacks") or [],
+                              cfg.get("auto_fallback", True))
+        hit = bool(decision.get("model_fallback_hit"))
         if decision.get("action") == "blocked_early":
             set_card_status(tid, "blocked")
             store.update(tid, attempt, status="blocked", verdict=verdict,
-                         exit_code=code, sig_history=hist)
+                         exit_code=code, sig_history=hist,
+                         model_fallback_hit=hit, upstream_streak=0)
             print(f"[WARN] {tid} {decision.get('reason')}，已标 blocked，等架构师处理")
             return
         reset_worktree(Path(rec["worktree"]))
@@ -212,16 +330,18 @@ def _settle(rec: dict, cfg: dict, store: RunsStore,
             # poll 只看 running、dispatch 只重派 ready → 必须标 blocked 进人工可见队列
             set_card_status(tid, "blocked")
             store.update(tid, attempt, status="error", verdict=verdict,
-                         exit_code=code, sig_history=hist)
+                         exit_code=code, sig_history=hist,
+                         model_fallback_hit=hit, upstream_streak=0)
             print(f"[WARN] {tid} 重派失败，已标 blocked 交人工：{exc}")
             return
         store.update(tid, attempt, status="retrying", verdict=verdict,
-                     exit_code=code, sig_history=hist)
+                     exit_code=code, sig_history=hist,
+                     model_fallback_hit=hit, upstream_streak=0)
         print(f"[INFO] {tid} 判定 {verdict}，已复位 worktree 并重派新 attempt")
     else:
         set_card_status(tid, "blocked")
         store.update(tid, attempt, status="blocked", verdict=verdict,
-                     exit_code=code, sig_history=hist)
+                     exit_code=code, sig_history=hist, upstream_streak=0)
         print(f"[WARN] {tid} 超重试上限，已标 blocked，等架构师处理")
 
 
@@ -285,6 +405,16 @@ def main() -> int:
                              status="error", verdict="fail-gate")
             except KeyError:
                 pass
+    # 收尾：模型恢复 + 校验（D 快照校验），异常只告警不改返回码
+    try:
+        just_finished = []
+        for rec in running:
+            cur = store.get(rec["task_id"], rec["attempt"])
+            if cur is not None and cur.get("status") != "running":
+                just_finished.append(cur)
+        finalize_model_restore(_dsh_settings_path(cfg), store, just_finished)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[WARN] 模型收尾校验异常：{type(exc).__name__}: {exc}")
     return 0
 
 

@@ -47,3 +47,6 @@ notes: |
 # skills: [superpowers/test-driven-development]
 # pipeline: false
 # pre_approved: false
+# approver: <架构师姓名/ID>  # 受保护路径提交需覆盖卡含非空 approver；
+# 授权规则：allow_write 覆盖 + 非空 approver + status 为 ready/in-progress，且 deny_write 命中则该卡不覆盖（deny 优先）；
+# commit message 里的 [APPROVED-BY] 自本规则起作废
