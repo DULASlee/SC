@@ -20,6 +20,7 @@ from runs import RunsStore  # noqa: E402
 from skills import DEFAULT_SKILLS_BY_STAGE  # noqa: E402
 from dispatch import (  # noqa: E402
     build_prompt,
+    card_self_authorized,
     ensure_worktree,
     load_card,
     load_config,
@@ -300,14 +301,30 @@ def _mark_done_and_archive(task_id: str, card: dict, cfg: dict) -> None:
 
     import yaml
 
-    card_path = ACTIVE_DIR / f"{task_id}.yaml"
+    # TASK-023：卡文件可带人类可读后缀（check-pr-scope v3.1 同规则），
+    # 按 id 前缀在 active/ 唯一解析卡文件；严格文件名假设已废弃。
+    cands = sorted(ACTIVE_DIR.glob(f"{task_id}*.yaml"))
+    if len(cands) != 1:
+        raise RuntimeError(
+            f"{task_id} 卡文件数 {len(cands)}（应唯一），拒绝机器验收")
+    card_path = cands[0]
+    # TASK-023 自覆盖契约：机器验收提交命中 .harness/** 保护，
+    # 卡须含非空 approver + allow_write 自覆盖（D2：approver 人工签发，不自动补）。
+    pre = card_self_authorized(load_card(card_path),
+                              card_path.relative_to(REPO_ROOT).as_posix())
+    if pre:
+        raise RuntimeError(f"{task_id} 机器验收提交拒绝：{pre}")
     text = card_path.read_text(encoding="utf-8")
     new, n = re.subn(r"(?m)^status:.*$", "status: done", text)
     if n == 0:
         raise RuntimeError(f"{task_id} 无 status 字段，拒绝改写")
     card_path.write_text(new, encoding="utf-8")
     _run(["git", "add", str(card_path)], REPO_ROOT)
-    # 机器验收提交：故意不带人工批标记，由 commit-msg hook 放行 done 路径。
+    # 机器验收提交：不带人工批标记（D1：机器验证归机器，授权归 approver——
+    # 人工批准的职责是授权任务及其写入范围，不是事后给机器验收结果盖章）。
+    # TASK-023：受保护路径合规由卡 approver + 自覆盖保证；归档 rename 由
+    # check_approval 自生命周期规则放行（done/已归档卡只覆盖自身卡文件，
+    # 保护范围不削弱）。原「hook 放行 done 路径」注释在 023 后失效，已废弃。
     _run(["git", "commit", "-m",
           f"chore(harness): {task_id} pipeline accept done",
           "--", str(card_path)], REPO_ROOT)

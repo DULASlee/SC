@@ -87,5 +87,42 @@ class TestDispatch(unittest.TestCase):
         self.assertNotIn("{prompt}", p)
 
 
+# ---------- TASK-023 自覆盖契约（机器状态提交前置检查） ----------
+
+SELF_CARD = ".harness/tasks/active/TASK-901.yaml"
+
+
+class TestCardSelfAuthorized(unittest.TestCase):
+    def test_missing_approver_rejected(self):
+        mod = load_dispatch()
+        card = {"approver": "",
+                "scope": {"allow_write": [SELF_CARD]}}
+        self.assertIsNotNone(mod.card_self_authorized(card, SELF_CARD))
+
+    def test_blank_approver_rejected(self):
+        mod = load_dispatch()
+        card = {"approver": "   ",
+                "scope": {"allow_write": [SELF_CARD]}}
+        self.assertIsNotNone(mod.card_self_authorized(card, SELF_CARD))
+
+    def test_no_self_allow_rejected(self):
+        mod = load_dispatch()
+        card = {"approver": "architect",
+                "scope": {"allow_write": ["docs/ai-workspace/rules/**"]}}
+        self.assertIsNotNone(mod.card_self_authorized(card, SELF_CARD))
+
+    def test_approver_and_self_allow_pass(self):
+        mod = load_dispatch()
+        card = {"approver": "architect",
+                "scope": {"allow_write": [SELF_CARD]}}
+        self.assertIsNone(mod.card_self_authorized(card, SELF_CARD))
+
+    def test_self_allow_via_glob_passes(self):
+        mod = load_dispatch()
+        card = {"approver": "architect",
+                "scope": {"allow_write": [".harness/tasks/active/*.yaml"]}}
+        self.assertIsNone(mod.card_self_authorized(card, SELF_CARD))
+
+
 if __name__ == "__main__":
     unittest.main()

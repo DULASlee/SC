@@ -1,6 +1,7 @@
 id: TASK-019
 title: "文档卫生：修正 CODEOWNERS 占位与 AGENTS.md 失效引用"
 status: ready
+approver: architect
 created: "2026-09-19T07:30:00Z"
 created_by: architect
 scope:

@@ -1,6 +1,7 @@
 id: TASK-021
 title: "沉淀 Base URL 配置错误教训（中国站与国际站子域名差异）"
 status: ready
+approver: architect
 created: 2026-09-19T00:00:00Z
 created_by: architect
 

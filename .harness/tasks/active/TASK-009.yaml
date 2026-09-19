@@ -2,6 +2,7 @@
 id: TASK-009
 title: "文档与配置集中化迁移（第一批）"
 status: in-progress
+approver: architect
 created: 2026-09-18T00:00:00Z
 created_by: architect
 scope:

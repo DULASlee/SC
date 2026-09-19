@@ -3,6 +3,7 @@
 id: TASK-008
 title: "经验沉淀机制落地（lessons-learned + 铁律 12）"
 status: in-progress
+approver: architect
 created: 2026-09-18T00:00:00Z
 created_by: architect
 scope:

@@ -1,6 +1,7 @@
 id: TASK-020
 title: "scope 检查器变更行数统计忽略纯 CRLF/LF 行尾规范化"
 status: ready
+approver: architect
 created: "2026-09-19T07:40:00Z"
 created_by: architect
 scope:

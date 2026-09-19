@@ -27,6 +27,7 @@ from skills import cap_text, load_skill_texts  # noqa: E402
 from modelswap import (  # noqa: E402
     DEFAULT_SETTINGS, acquire_lock, read_selection, release_lock,
     split_model, swap_for_run)
+from canary import is_required as canary_is_required  # noqa: E402
 
 SCRIPTS_DIR = HARNESS_DIR / "scripts"
 ACTIVE_DIR = HARNESS_DIR / "tasks" / "active"
@@ -55,6 +56,7 @@ def load_config() -> dict:
             print(f"[FAIL] dispatch.yaml 字段 {k} 必须为 >=1 的整数，当前：{cfg[k]!r}")
             sys.exit(2)
     cfg.setdefault("model_fallbacks", [])
+    cfg.setdefault("auto_fallback", True)
     cfg.setdefault("loop_interval_seconds", 120)
     cfg.setdefault("prompt_budget",
                    {"failure_note_max_chars": 2000, "skill_max_bytes": 12288})
@@ -189,6 +191,37 @@ def ensure_worktree(task_id: str, repo_root: Path, wt_root: Path) -> Path:
     return wt
 
 
+def is_worktree_dirty(wt: Path) -> bool:
+    """worktree 是否有未提交变更（porcelain 非空即脏）。"""
+    p = subprocess.run(["git", "-c", "core.quotepath=off",
+                        "status", "--porcelain", "-uall"],
+                       cwd=wt, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    if p.returncode != 0:
+        raise RuntimeError(f"worktree 状态检查失败：{(p.stderr or '').strip()[:200]}")
+    return bool((p.stdout or "").strip())
+
+
+def reset_worktree(wt: Path) -> None:
+    """复位 worktree（只动 worktree，不碰主仓）：丢弃未提交改动。"""
+    run(["git", "reset", "--hard"], cwd=wt)
+    run(["git", "clean", "-fd"], cwd=wt)
+
+
+def check_worktree_gate(wt: Path, task_id: str, attempt: int) -> None:
+    """worktree 洁净门：脏 worktree 拒绝派发。
+
+    重试轮（attempt>1）先 reset 再复查；仍脏（或首轮即脏）抛错拒绝，
+    调用方（dispatch main / poll _settle）的既有异常处理负责记 error。
+    """
+    if not is_worktree_dirty(wt):
+        return
+    if attempt > 1:
+        reset_worktree(wt)
+    if is_worktree_dirty(wt):
+        raise RuntimeError(f"{task_id} worktree 脏（含未提交变更），拒绝派发")
+
+
 def spawn_attempt(task_id: str, card: dict, cfg: dict, store: RunsStore,
                   failure_note: str | None, prompt_override: str | None = None,
                   stage: str = "execute", model_override: str | None = None,
@@ -198,7 +231,9 @@ def spawn_attempt(task_id: str, card: dict, cfg: dict, store: RunsStore,
     占坑（status→in-progress + commit）由调用方保证，本函数不改卡状态，
     使 dispatch 首轮与 poll 重试轮可共用同一套 spawn 逻辑。
     """
+    attempt = store.attempts(task_id) + 1
     wt = ensure_worktree(task_id, REPO_ROOT, REPO_ROOT / cfg["worktree_root"])
+    check_worktree_gate(wt, task_id, attempt)
     code, _, err = run(
         [sys.executable, str(SCRIPTS_DIR / "start-task.py"), task_id],
         cwd=REPO_ROOT)
@@ -236,7 +271,6 @@ def spawn_attempt(task_id: str, card: dict, cfg: dict, store: RunsStore,
     prompt = prompt_override or build_prompt(
         ctx.resolve(), eff, failure_note, skills_ctx)
     argv = [a.replace("{prompt}", prompt) for a in cfg["executor_argv"]]
-    attempt = store.attempts(task_id) + 1
     run_dir = REPO_ROOT / cfg["runs_dir"] / task_id / f"attempt-{attempt}"
     # 原子性：先落盘(spawning)后拉起，避免 Popen 成功但 append 前崩溃的孤儿进程
     store.append({"task_id": task_id, "attempt": attempt, "pid": None,
@@ -272,14 +306,49 @@ def _set_card_status_text(card_path: Path, status: str) -> None:
     card_path.write_text(new, encoding="utf-8")
 
 
+def _glob_match(pattern: str, path: str) -> bool:
+    """与 check-pr-scope.py / check_approval.py 同语义：** 递归、* 单段。"""
+    p = re.escape(pattern)
+    p = p.replace(r"\*\*/", r"(?:.*/)?")
+    p = p.replace(r"\*\*", r".*")
+    p = p.replace(r"\*", r"[^/]*")
+    p = p.replace(r"\?", r"[^/]")
+    return re.match(f"^{p}$", path) is not None
+
+
+def card_self_authorized(card: dict, rel_path: str) -> str | None:
+    """TASK-023 自覆盖契约：机器状态提交前置检查（fail-fast，可操作报错）。
+
+    卡必须：
+      - approver 非空（人工签发，D2 禁止自动补填）；
+      - allow_write 覆盖自身卡文件（rel_path 为仓库相对路径）。
+    通过返回 None；否则返回原因字符串。hook（check_approval）仍是权威判定，
+    本检查只负责在占坑/标记/机器验收时刻给出可操作错误。
+    """
+    approver = str((card.get("approver") or "")).strip()
+    if not approver:
+        return ("approver 为空（TASK-023：机器状态提交需卡含非空 approver；"
+                "D2 规定 approver 人工签发，禁止自动补填）")
+    allow = ((card.get("scope") or {}).get("allow_write")) or []
+    if not any(_glob_match(str(p), rel_path) for p in allow):
+        return f"allow_write 未覆盖自身卡文件 {rel_path}（TASK-023 自覆盖缺失）"
+    return None
+
+
 def commit_card_status(card_path: Path, task_id: str, status: str,
-                       verb: str) -> None:
+                      verb: str) -> None:
     """把卡 status 改为给定值并单独提交。
 
     提交用 pathspec 限定到本卡，避免把索引里无关的暂存变更扫进带
     [APPROVED-BY] 的提交；git 失败即回滚本卡文件到 HEAD 并抛错。
     治理规则：任何卡状态变更都必须落 commit。dispatch 与 poll 共用。
     """
+    # TASK-023 自覆盖契约：提交前先验卡（approver + 自覆盖），不满足即拒，
+    # 避免把状态文本改掉后才在 hook 层被拒、回滚路径再失败。
+    rel = card_path.relative_to(REPO_ROOT).as_posix()
+    pre = card_self_authorized(load_card(card_path), rel)
+    if pre:
+        raise RuntimeError(f"{task_id} {verb} 拒绝：{pre}")
     _set_card_status_text(card_path, status)
     rc1, _, e1 = run(["git", "add", str(card_path)], cwd=REPO_ROOT)
     rc2, _, e2 = run(
@@ -304,6 +373,15 @@ def main() -> int:
     args = ap.parse_args()
 
     cfg = load_config()
+    # preflight ① canary 门：现状与留证任一变化即整轮拒绝派发（无逃生口）。
+    try:
+        canary_blocked = canary_is_required(cfg)
+    except Exception as exc:  # noqa: BLE001  探针环境异常按需留证处理
+        print(f"[FAIL] canary 门检查异常，拒绝派发：{exc}")
+        return 2
+    if canary_blocked:
+        print("canary_required：先跑 canary.py 留证")
+        return 0
     store = RunsStore(REPO_ROOT / cfg["runs_dir"] / "RUNS.jsonl")
     cap = cfg["max_tasks_per_run"] if args.max_tasks is None else args.max_tasks
 

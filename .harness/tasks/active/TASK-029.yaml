@@ -1,6 +1,7 @@
 id: TASK-029
 title: "沉淀机制④：索引一致性常驻测试 + 参数化沉淀验收"
 status: ready
+approver: architect
 created: 2026-09-19T12:00:00Z
 created_by: architect
 

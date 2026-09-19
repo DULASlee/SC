@@ -1,6 +1,7 @@
 id: TASK-012
 title: "Roslynator 包接入 + .editorconfig 白名单 + 试点 + 警告分类报告"
 status: ready
+approver: architect
 created: 2026-09-18T00:00:00Z
 created_by: architect
 scope:
