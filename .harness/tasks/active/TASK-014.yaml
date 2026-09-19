@@ -1,0 +1,52 @@
+id: TASK-014
+title: "Roslynator 白名单全仓推广 + 警告消解"
+status: ready
+created: 2026-09-18T00:00:00Z
+created_by: architect
+depends_on: [TASK-012]
+scope:
+  allow_write:
+    - Directory.Build.props
+    - .editorconfig
+    - src/**/*.cs
+    - tests/**/*.cs
+    - "*.csproj"
+    - .harness/tasks/active/TASK-014.yaml
+    # TASK-017: 铁律 12 强制每卡追加经验，allow 必须覆盖经验库
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - docs/ai-workspace/rules/engineering-rules.mdc
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+notes: |
+  ## 基于 TASK-012 白名单（15 条规则）
+
+  逐工程启用并消警告。顺序：
+
+  | 顺序 | 工程 | 风险 | 预估警告量 | 状态 |
+  |---|---|---|---|---|
+  | 1 | tests/ReliabilityTests | ✅ 已做(TASK-012) | 0 | done |
+  | 2 | src/Backend/IoTPlatform.Core | ✅ 已做(TASK-012) | 0 | done |
+  | 3 | src/Backend/IoTPlatform.Adapters | 低 | ~20-40 | TODO |
+  | 4 | src/Backend/IoTPlatform.Host | 低 | ~10-20 | TODO |
+  | 5 | tests/GenCollector.Tests (如有) | 低 | ~5-10 | TODO |
+  | 6 | src/Collector/GenCollector | ⚠️ x86 | ~30-60 | TODO |
+  | 7 | src/Frontend/GenDashboard | ⚠️ WinForms | ~20-40 | TODO |
+  | 8 | src/Frontend/IoTPlatform.UI.Wpf | ⚠️ WPF | ~10-20 | TODO |
+  | 9 | 其余 tests/ | 低 | ~10-20 | TODO |
+
+  ## 消解规则
+
+  - 机械性修改直接做（加 braces、var→显式、删空行、表达式体）
+  - 需改业务设计的规则 → 在 notes 登记规则ID+文件，设为 severity=none
+  - 铁律 2 边界：不改 MQTT 发布结构、不改数据模型契约、不改 alarm 状态机
+  - GenCollector (x86) 改动需验证 `dotnet build` 通过（可能需 x86 toolchain）
+
+  ## 完成标准
+
+  - 每个工程 `dotnet build` 0 warnings（对启用的 RCS 规则）
+  - 全仓 `dotnet build` 0 errors 0 warnings（TreatWarningsAsErrors）
+  - 不追求启用全部 500+ 规则——只推广 TASK-012 白名单中已验证的 15 条

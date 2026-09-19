@@ -1,0 +1,29 @@
+id: TASK-011
+title: "清理 TASK-009/010 迁移后的残留旧路径引用"
+status: ready
+created: 2026-09-18T00:00:00Z
+created_by: architect
+scope:
+  allow_write:
+    - .specstory/**
+    - .harness/rules/**
+    - .harness/tasks/active/TASK-008.yaml
+    - .harness/tasks/active/TASK-009.yaml
+    - .superpowers/PROJECT.md
+    - harness/superpowers-install-report.md
+    - .harness/tasks/active/TASK-011.yaml
+    # TASK-017: 铁律 12 强制每卡追加经验，allow 必须覆盖经验库
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - src/**
+    - docs/ai-workspace/rules/engineering-rules.mdc
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+notes: |
+  清理 TASK-009/010 迁移后残留的旧路径引用。
+  删除已清空的 .specstory/ 和 .harness/rules/ 目录。
+  更新 .superpowers/PROJECT.md 中的路径引用。
+  历史任务卡加注释说明。

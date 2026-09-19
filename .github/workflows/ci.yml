@@ -3,8 +3,43 @@ name: ci
 on:
   push:
     branches: [main, develop, 'feat/**']
+    paths:
+      # 触发 CI build 的路径（业务代码 / 测试 / 构建配置）
+      - 'src/**'
+      - 'tests/**'
+      - 'Directory.Build.props'
+      - 'Directory.Build.targets'
+      - '.editorconfig'
+      - 'BannedSymbols.txt'
+      - 'contracts/**'
+      - '*.csproj'
+      # 门禁与治理文件变更必须跑 CI（L3 scope 检查 / 任务卡校验 / 契约一致性）
+      # TASK-017: 纯文档/治理 PR 不再绕过门禁
+      - '.harness/**'
+      - 'docs/ai-workspace/**'
+      - 'docs/architecture/**'
+      - '.githooks/**'
+      - 'AGENTS.md'
+      - '.github/workflows/**'
   pull_request:
     branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'Directory.Build.props'
+      - 'Directory.Build.targets'
+      - '.editorconfig'
+      - 'BannedSymbols.txt'
+      - 'contracts/**'
+      - '*.csproj'
+      # 门禁与治理文件变更必须跑 CI（L3 scope 检查 / 任务卡校验 / 契约一致性）
+      # TASK-017: 纯文档/治理 PR 不再绕过门禁
+      - '.harness/**'
+      - 'docs/ai-workspace/**'
+      - 'docs/architecture/**'
+      - '.githooks/**'
+      - 'AGENTS.md'
+      - '.github/workflows/**'
 
 jobs:
   # L1-alpha 阶段建立的契约一致性检查

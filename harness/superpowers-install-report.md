@@ -51,7 +51,7 @@
 ## 四、本项目入口（PROJECT.md）的 8 个章节
 
 1. **项目身份** — `F:\JQKJ` / main 分支 / 最近提交 `caa0f9f` / 平台 / 当前阶段
-2. **全局规则已生效** — 引 `~/.claude/rules/engineering-iron-laws.md` + `.specstory/config/engineering-rules.mdc` + 4 个 ADR
+2. **全局规则已生效** — 引 `~/.claude/rules/engineering-iron-laws.md` + `docs/ai-workspace/rules/engineering-rules.mdc` + 4 个 ADR
 3. **已部署的 L0 Harness** — 3 文件清单 + 验收报告路径
 4. **本项目专属 Skills（已选定）** — ❌ binary/ctf 类；✅ superpowers + episodic-memory + writing-plans 等
 5. **当前可执行任务** — 6 个候选（L2/L1/L3/L4 各项）

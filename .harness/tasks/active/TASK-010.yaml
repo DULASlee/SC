@@ -1,0 +1,23 @@
+id: TASK-010
+title: "铁律 13 + 14 写入 + 符号链接建立说明"
+status: in-progress
+created: 2026-09-18T00:00:00Z
+created_by: architect
+scope:
+  allow_write:
+    - docs/ai-workspace/rules/engineering-rules.mdc
+    - docs/ai-workspace/README.md
+    - .harness/tasks/active/TASK-010.yaml
+    # TASK-017: 铁律 12 强制每卡追加经验，allow 必须覆盖经验库
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+  - "ci: contract_consistency"
+notes: |
+  铁律 13（禁止直接合入 main）+ 铁律 14（文档与配置集中化）追加到 engineering-rules.mdc。
+  符号链接建立说明写入 docs/ai-workspace/README.md。

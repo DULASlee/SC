@@ -51,8 +51,14 @@ public sealed class SampleData
         };
         foreach (var r in results)
         {
-            if (r.IsSuccess) data.Values[r.Tag.Name] = r.Value;
-            else data.Errors[r.Tag.Name] = r.Error ?? "Unknown";
+            if (r.IsSuccess)
+            {
+                data.Values[r.Tag.Name] = r.Value;
+            }
+            else
+            {
+                data.Errors[r.Tag.Name] = r.Error ?? "Unknown";
+            }
         }
         return data;
     }

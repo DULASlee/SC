@@ -1,0 +1,49 @@
+id: TASK-012
+title: "Roslynator 包接入 + .editorconfig 白名单 + 试点 + 警告分类报告"
+status: ready
+created: 2026-09-18T00:00:00Z
+created_by: architect
+scope:
+  allow_write:
+    - Directory.Build.props
+    - .editorconfig
+    - tests/ReliabilityTests/**/*.cs
+    - tests/ReliabilityTests/**/*.csproj
+    - src/Backend/IoTPlatform.Core/**/*.cs
+    - src/Backend/IoTPlatform.Core/**/*.csproj
+    - .harness/tasks/active/TASK-012.yaml
+    # TASK-017: 铁律 12 强制每卡追加经验，allow 必须覆盖经验库
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    # TASK-017 修复：原 deny 含 tests/**/*.cs，与 allow tests/ReliabilityTests/** 重叠，
+    # 导致 allow 成死信（deny 先行）。allow 本就只放行 ReliabilityTests + Core，删除该条。
+    - docs/ai-workspace/rules/engineering-rules.mdc
+    - src/Collector/**/*.cs
+    - src/Frontend/**/*.cs
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+notes: |
+  1. Directory.Build.props 加 Roslynator.Analyzers 4.12.9 包引用（PackageReference，PrivateAssets=all）
+  2. .editorconfig 新建 [Roslynator] 段，白名单仅含低风险类别：
+     - 格式：RCS0001-RCS0030 范围内选 5-8 条（换行/空格/文件尾）
+     - 简化：RCS1000-RCS1099 范围内选 3-5 条（expression-body、var、remove-unnecessary-braces）
+     - unused：RCS1213 等 2-3 条
+     - 总计不超过 15 条规则，全部 severity=warning
+  3. 在 tests/ReliabilityTests 跑 dotnet build，确认白名单规则生效
+  4. 全仓 dotnet build 跑一次，收集所有 RCS 警告（当前应为 0 因为没全开），记录到任务卡 notes
+  5. 交付物：警告分类报告（按规则ID/项目/是否纯style/是否需改业务 四列），作为 TASK-014 输入
+  6. 不消全仓警告，不改 src/ 任何文件
+
+  ## 警告分类报告（2026-09-18）
+
+  | 规则 | 触发次数 | 项目 | 纯 style | 需改业务 | 处置 |
+  |---|---|---|---|---|---|
+  | RCS1007 Add braces | 100+ | src/Backend/IoTPlatform.Core/*, ReliabilityTests | 是 | 否（机械加花括号） | TASK-012 消 ReliabilityTests + Core |
+  | RCS1264 (was 1008) Use explicit type | 60+ | 同上 | 是 | 否（var→显式） | TASK-012 消试点 |
+  | RCS1036 Remove blank line | 1 | ReliabilityTests | 是 | 否 | TASK-012 消 |
+  | 其余 12 条白名单规则 | 0 | — | — | — | 保留为基线 |
+
+  全仓推广计划见 TASK-014。

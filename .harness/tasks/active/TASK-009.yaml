@@ -1,0 +1,27 @@
+# 注意：本卡创建时正在执行迁移（自指）。notes 中引用的源路径（.specstory/, .harness/）为迁移前快照，迁移完成后已不存在。
+id: TASK-009
+title: "文档与配置集中化迁移（第一批）"
+status: in-progress
+created: 2026-09-18T00:00:00Z
+created_by: architect
+scope:
+  allow_write:
+    - docs/**
+    - AGENTS.md
+    - .githooks/**
+    - .github/workflows/**
+    - .harness/tasks/active/TASK-009.yaml
+    # TASK-017: 铁律 12 强制每卡追加经验，allow 必须覆盖经验库
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - src/**
+    - tests/**
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+notes: |
+  迁移源：仅迁移存在的文件（.specstory/config/engineering-rules.mdc, .harness/rules/lessons-learned.md, .githooks/pre-push, .githooks/commit-msg）。
+  不存在的文件（governance.md, red/TASK-003/, check-red-evidence.py 等）跳过，原因：PR 4 重做被放弃或尚未创建。
+  铁律 13 + 14 追加。AGENTS.md 重写。

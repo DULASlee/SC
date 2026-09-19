@@ -56,4 +56,14 @@
     <PackageReference Include="coverlet.collector" Version="6.0.2" PrivateAssets="all" />
   </ItemGroup>
 
+  <!--
+    L2-A 收尾 (TASK-012): Roslynator.Analyzers 4.12.9 包接入。
+    仅接入包；规则启用由 .editorconfig [Roslynator] 段控制。
+    白名单规则详见 .editorconfig。本卡不做全规则集启用。
+    范围: 所有工程 (LnkCollector_src 暂不豁免, 待 TASK-014 评估后决定)。
+  -->
+  <ItemGroup>
+    <PackageReference Include="Roslynator.Analyzers" Version="4.12.9" PrivateAssets="all" />
+  </ItemGroup>
+
 </Project>

@@ -20,9 +20,15 @@ public sealed class CollectorRegistry
 
     public void Register(ICollector collector)
     {
-        if (collector is null) throw new ArgumentNullException(nameof(collector));
+        if (collector is null)
+        {
+            throw new ArgumentNullException(nameof(collector));
+        }
+
         if (!_collectors.TryAdd(collector.DeviceId, collector))
+        {
             throw new InvalidOperationException($"Collector {collector.DeviceId} already registered");
+        }
 
         collector.StatusChanged += OnStatusChanged;
         collector.SampleCollected += OnSampleCollected;
@@ -33,7 +39,10 @@ public sealed class CollectorRegistry
 
     public bool Unregister(string deviceId)
     {
-        if (!_collectors.TryRemove(deviceId, out var c)) return false;
+        if (!_collectors.TryRemove(deviceId, out var c))
+        {
+            return false;
+        }
         c.StatusChanged -= OnStatusChanged;
         c.SampleCollected -= OnSampleCollected;
         c.Error -= OnError;
@@ -43,8 +52,14 @@ public sealed class CollectorRegistry
 
     public void RegisterView(ICollectorView view)
     {
-        if (view is null) throw new ArgumentNullException(nameof(view));
-        lock (_viewLock) _views.Add(view);
+        if (view is null)
+        {
+            throw new ArgumentNullException(nameof(view));
+        }
+        lock (_viewLock)
+        {
+            _views.Add(view);
+        }
         view.RenderCollectors(Collectors);
     }
 
@@ -67,7 +82,14 @@ public sealed class CollectorRegistry
         await StopAllAsync().ConfigureAwait(false);
         foreach (var c in _collectors.Values)
         {
-            try { await c.DisposeAsync().ConfigureAwait(false); } catch { /* ignore */ }
+            try
+            {
+                await c.DisposeAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+                /* ignore */
+            }
         }
         _collectors.Clear();
     }
@@ -84,11 +106,20 @@ public sealed class CollectorRegistry
     private void BroadcastView(Action<ICollectorView> action)
     {
         ICollectorView[] snapshot;
-        lock (_viewLock) snapshot = _views.ToArray();
+        lock (_viewLock)
+        {
+            snapshot = _views.ToArray();
+        }
         foreach (var v in snapshot)
         {
-            try { action(v); }
-            catch { /* don't let one view break others */ }
+            try
+            {
+                action(v);
+            }
+            catch
+            {
+                /* don't let one view break others */
+            }
         }
     }
 }

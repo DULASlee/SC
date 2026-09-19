@@ -1,0 +1,27 @@
+# 注意：本卡创建时路径尚未迁移，scope 中引用的 .specstory/ 和 .harness/ 路径为历史记录。
+# TASK-009 已将这些路径迁至 docs/ai-workspace/。本卡历史状态保留，scope 不重写。
+id: TASK-008
+title: "经验沉淀机制落地（lessons-learned + 铁律 12）"
+status: in-progress
+created: 2026-09-18T00:00:00Z
+created_by: architect
+scope:
+  allow_write:
+    - .harness/rules/lessons-learned.md
+    - .specstory/config/engineering-rules.mdc
+    - AGENTS.md
+    - .harness/tasks/active/TASK-008.yaml
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+  - "ci: contract_consistency"
+  - "ci: build"
+notes: |
+  本卡建立经验沉淀基础设施。种子经验 10 条已写入。
+  铁律 12 强制每卡提炼经验。
+  每周整理由项目负责人手动触发，执行者按铁律 12 末尾要求执行去重归档。

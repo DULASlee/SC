@@ -1,0 +1,71 @@
+id: TASK-017
+title: "修复 L3 PR scope 门禁：多卡支持 + allow/deny 冲突检测 + 铁律 12 解耦"
+status: ready
+created: 2026-09-18T12:00:00Z
+created_by: architect
+scope:
+  allow_write:
+    - .harness/scripts/check-pr-scope.py
+    - .github/workflows/ci.yml
+    - .harness/tasks/active/TASK-009.yaml
+    - .harness/tasks/active/TASK-010.yaml
+    - .harness/tasks/active/TASK-011.yaml
+    - .harness/tasks/active/TASK-012.yaml
+    - .harness/tasks/active/TASK-013.yaml
+    - .harness/tasks/active/TASK-014.yaml
+    - .harness/tasks/active/TASK-017.yaml
+    - .harness/tasks/TASK-TEMPLATE.yaml
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+constraints:
+  max_lines_changed: 360
+  max_files_changed: 15
+depends_on: []
+references:
+  - docs/incidents/INC-001-no-verify-usage.md
+notes: |
+  ## 背景（CI 证据）
+  最近 4 个 PR 的 CI 均挂在 L3 Check PR Scope，其余 6 个 job 全绿：
+  1. PR #6（TASK-014）：lessons-learned.md 不在 allow_write，而该修改是铁律 12 强制要求
+  2. PR #4（TASK-012）：deny tests/**/*.cs 覆盖 allow tests/ReliabilityTests/**/*.cs（deny 先行，allow 成死信）
+  3. PR #2（TASK-009/010）：脚本只取第一张卡，TASK-010.yaml 自身变更被判越界
+  4. PR #3（TASK-011）：同模式
+  另：ci.yml pull_request/push paths 不含 .harness/**、docs/ai-workspace/**、.githooks/**，
+  纯文档/治理 PR 完全不触发 CI，scope 门禁被绕过。
+
+  ## 改动
+  - check-pr-scope.py v3：
+    * 多卡 allow/deny 并集；allow 先行，命中 deny 且同时命中 allow 时报 [CONFIG-CONFLICT]
+      （deny 仍优先）；规模限制按卡求和；--task-id 支持逗号分隔
+    * 任务号提取只认“交付声明”（Markdown 标题 ## TASK-XXX，或 Closes/Fixes/Resolves/Refs/
+      任务卡 等关键词引导），不把正文里引用/对比/路径中的历史卡号当授权卡
+    * 仅 ready/in_progress 状态卡可作为 PR 授权卡（draft/done 显式拒绝）
+    * 否定语境行（not/未改动/未纳入/不在）不作为声明来源
+  - main 上已合入的 active 卡 009-014：allow_write 统一追加 docs/ai-workspace/rules/lessons-learned.md
+    （在制契约冻结卡尚未合入 main，不在本 PR 范围；其工作区草稿已同样补行，随其自身 PR 提交）
+  - TASK-012：移除与 allow 重叠的 deny tests/**/*.cs
+  - ci.yml：paths 追加 .harness/**、docs/ai-workspace/**、docs/architecture/**、.githooks/**、AGENTS.md、.github/workflows/**
+  - TASK-TEMPLATE.yaml：allow_write 追加 lessons-learned.md（防复发）
+  - 本卡供修复 PR 自举通过 scope 门禁
+
+  ## 验证证据
+  - PR #7 全 7 个 job 绿（run 35403618312），其中 L3 Check PR Scope 输出：
+    [INFO] Task IDs: TASK-017 → [OK] scope 检查通过：1 张卡，11 文件，291 行变更
+  - 本地 pre-push 钩子 44/44 测试通过（GenCollector 35 + GenDashboard 5 + Reliability 4），未用 --no-verify
+  - 提取器单测覆盖：真实 PR body、历史 PR #6 标题+散文、多卡 Closes、否定行、路径提及、draft 卡拒绝、缺失卡拒绝
+
+  ## 编号说明（架构师决策 2026-09-18）
+  原方案拟用编号与 TASK-015 notes 预留的"契约漂移跟进（AsyncAPI/alarm-state-machine）"冲突。
+  架构师拍板：本修复卡改号 TASK-017；预留编号继续保留给契约漂移跟进，待本卡合并后另行处理其引用。
+  本卡方案经架构师书面审核批准执行（授权标记 [APPROVED-BY: DULASlee]）。
+
+  ## 注
+  - TASK-001（draft 示范卡）与 TASK-008（卡内注明"scope 不重写"的历史卡）未改动。

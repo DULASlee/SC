@@ -1,0 +1,44 @@
+id: TASK-020
+title: "scope 检查器变更行数统计忽略纯 CRLF/LF 行尾规范化"
+status: ready
+created: "2026-09-19T07:40:00Z"
+created_by: architect
+scope:
+  allow_write:
+    - .harness/scripts/check-pr-scope.py
+    - .harness/tasks/active/TASK-020.yaml
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+constraints:
+  max_lines_changed: 120
+  max_files_changed: 4
+depends_on: [TASK-017]
+references:
+  - .harness/scripts/check-pr-scope.py
+notes: |
+  ## 背景（TASK-015 终局预审暴露）
+  仓库历史把 docs/architecture/openapi.yaml 以 CRLF 存入 git；后加的
+  .gitattributes 规定 *.yaml text eol=lf。TASK-015 分支把该文件规范化为 LF，
+  真实内容改动仅 17 行，但 check-pr-scope.py 用 `git diff --numstat`（不忽略 CR）
+  计数得到 2221 行（+1119/-1102），叠加后 2503 行 > 卡默认上限 300，误判超限。
+
+  实测：`git diff --numstat --ignore-cr-at-eol` 下整组 TASK-015 变更真实为
+  299 行 / 7 文件。
+
+  ## 修复
+  - get_changed_lines() 统计增加忽略纯行尾差异的口径（--ignore-cr-at-eol），
+    使 EOL 规范化不再被计入“工作量”。
+  - 变更文件清单仍用普通 --name-only（EOL 规范化的文件本身仍计入文件数，
+    文件数限制不受影响）。
+  - 补一个最小回归用例/自测说明：构造 CRLF→LF 翻转 + 少量内容改动，
+    断言只统计真实内容行。
+
+  ## 范围
+  只动 check-pr-scope.py 的行数统计口径 + 本卡，不改其他门禁语义。
