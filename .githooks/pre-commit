@@ -1,6 +1,10 @@
 #!/bin/bash
-# L0-L3 本地门禁：提交前必须全部通过
-# 架构师 §一 方案 1（pre-commit hook）
+# L0-L3 local gates: all must pass before commit
+# Architect §1 plan 1 (pre-commit hook)
+# TASK-024 C2/C4: 受保护路径判定唯一入口 = commit-msg hook + check_approval.py；
+#   check-protected-paths.py 调用已移除（全仓零 live 引用证据见
+#   docs/testing/red/TASK-024/scan-report.md）；教育提示统一为现行模型，
+#   输出 ASCII 化（AGENTS 规则 4）。
 set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -9,23 +13,20 @@ cd "$REPO_ROOT"
 # shellcheck disable=SC1091
 source .githooks/lib/common.sh
 
-echo "=== pre-commit 门禁 ==="
+echo "=== pre-commit gate ==="
 
-# 1. 关键目录保护
-python .harness/scripts/check-protected-paths.py || fail "关键目录越权修改"
+# 1. Task card validation
+python .harness/scripts/validate-task-card.py --all || fail "task card validation failed"
 
-# 2. 任务卡校验
-python .harness/scripts/validate-task-card.py --all || fail "任务卡校验失败"
+# 2. Local scope check (allow_write / deny_write / scale, per active card)
+python .harness/scripts/check-local-scope.py || fail "scope check failed"
 
-# 3. 本地 scope 检查
-python .harness/scripts/check-local-scope.py || fail "scope 检查失败"
+# 3. Contract consistency
+python scripts/check-contract-consistency.py || fail "contract consistency failed"
 
-# 4. 契约一致性
-python scripts/check-contract-consistency.py || fail "契约一致性失败"
-
-# 5. 编译 + 警告即错误
+# 4. Build with warnings-as-errors
 # 注：本仓库无 .sln 文件，逐个工程 build。
-#     用 bash 数组传参（避免行末 \ 续行吞参数）。
+# 用 bash 数组传参（避免行末 \ 续行吞参数）。
 PROJECTS=(
     "src/Collector/GenCollector/GenCollector.csproj"
     "src/Frontend/GenDashboard/GenDashboard.csproj"
@@ -44,36 +45,42 @@ for proj in "${PROJECTS[@]}"; do
     else
         args=( "$proj" -c Release "-p:TreatWarningsAsErrors=true" --nologo -v quiet )
     fi
-    dotnet build "${args[@]}" || fail "编译失败：$proj"
+    dotnet build "${args[@]}" || fail "build failed: $proj"
 done
 
-# 6. 架构测试（如果存在）
+# 5. Architecture tests (if present)
 if [ -f "tests/ArchitectureTests/ArchitectureTests.csproj" ]; then
-    dotnet test tests/ArchitectureTests/ArchitectureTests.csproj -c Release --no-build --nologo -v quiet || fail "架构测试失败"
+    dotnet test tests/ArchitectureTests/ArchitectureTests.csproj -c Release --no-build --nologo -v quiet || fail "architecture tests failed"
 else
-    info "ArchitectureTests 不存在，跳过（不在本阶段范围）"
+    info "ArchitectureTests not present, skipping (out of this phase)"
 fi
 
-ok "pre-commit 全部通过"
+ok "pre-commit all passed"
 
 # 教育性提示：在 hook 失败时打印（通过 set -e 触发 EXIT trap）
-# 注：trap 在 set -e 下，每个失败命令会触发 EXIT 一次，但 bash 默认 EXIT trap 只触发一次
-# 用 on_error 函数在 ERR trap 上调用
+# TASK-024 C2：提示统一反映现行模型（TASK 引用 + 覆盖卡 approver + SKIP 通道），
+#   [APPROVED-BY] 与豁免前缀（chore:/docs:）旧语义已随 023 E1 移除作废。
 on_error() {
     local exit_code=$?
     echo "" >&2
     cat <<'EOF' >&2
 
-=========================================================================
-pre-commit 门禁失败修复指南
-=========================================================================
-- 任务卡校验失败  → 修改 .harness/tasks/active/TASK-XXX.yaml
-- scope 检查失败  → 将变更限制在 allow_write 范围内，或申请新任务卡
-- 契约一致性失败  → 检查 contracts/openapi.yaml 与 .harness/schema/ 一致性
-- 编译失败       → 按 .editorconfig 修复 CS/RS/RCS 警告
-- 受保护路径     → commit message 加 [APPROVED-BY: 架构师-name]
-- 受保护路径     → 或用豁免前缀（chore:/docs:） + commit message 含 type(scope)
-=========================================================================
+===========================================================================
+pre-commit gate fix guide (current model, TASK-024 C2)
+===========================================================================
+- task card validation failed -> fix .harness/tasks/active/TASK-XXX.yaml
+- scope check failed         -> limit changes to the active card allow_write,
+                                or open a new task card
+- contract consistency failed -> check contracts/openapi.yaml vs .harness/schema/
+- build failed               -> fix CS/RS/RCS warnings per .editorconfig
+- protected paths (.harness/**, tests/**, contracts/**, .githooks/**,
+  .github/**, Directory.Build.props/targets, stryker-config.json):
+  the commit-msg hook enforces via check_approval.py:
+    (1) commit message first line must reference TASK-XXX
+    (2) an active card (status ready/in-progress) whose allow_write covers
+        the file AND with a non-empty approver field, or
+    (3) architect sets SKIP_PROTECTED_CHECK=1 (architect channel only)
+===========================================================================
 EOF
 }
 trap on_error ERR

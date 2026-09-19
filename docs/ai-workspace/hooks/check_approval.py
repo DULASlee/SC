@@ -137,10 +137,11 @@ def is_approved(staged_files: list[str], cards_dir: Path) -> tuple[bool, str]:
       路径（active/archive 下按该卡 id 命名的文件），仍需非空 approver +
       自覆盖 allow_write + deny 优先；第三方路径一律不覆盖。
     - 否则 (False, ...)。commit message 永不作为依据（无此参数）。
+    - TASK-024 C3：返回消息一律 ASCII（AGENTS 规则 4；不改判定语义）。
     """
     protected_hits = [f for f in (staged_files or []) if is_protected(f)]
     if not protected_hits:
-        return True, "[OK] 未触碰受保护路径"
+        return True, "[OK] no protected path touched"
     cards = list(_iter_cards(Path(cards_dir)))
     uncovered = []
     for f in protected_hits:
@@ -163,10 +164,10 @@ def is_approved(staged_files: list[str], cards_dir: Path) -> tuple[bool, str]:
     if uncovered:
         detail = " ".join(uncovered)
         return False, (
-            "[FAIL] 触碰受保护路径，但无覆盖 active 卡（含非空 approver 字段）："
-            + detail
+            "[FAIL] protected path touched, but no covering active card "
+            "(non-empty approver field): " + detail
         )
-    return True, "[OK] 受保护路径已有覆盖卡批准"
+    return True, "[OK] protected path covered by active card approval"
 
 
 def _default_cards_dir() -> Path:

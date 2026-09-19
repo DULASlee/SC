@@ -1,8 +1,10 @@
 #!/bin/bash
-# 强制 commit message 引用 TASK-XXX（架构师 §一 S4）
-# TASK-023：E1 移除——豁免前缀/豁免类型全部作废，保护改纯 path 判定：
-#   首行必须引用 TASK-XXX（所有提交，含 conventional 前缀）；
-#   触碰受保护路径时，由 check_approval.py 按 active 卡 allow_write + 非空 approver 判定。
+# Force commit message to reference TASK-XXX (architect §1 S4)
+# TASK-023: E1 removed — no exempt prefixes/types; protection is pure path
+#   judgment: first line must reference TASK-XXX; protected-path hits are
+#   judged by check_approval.py (active card allow_write + non-empty approver).
+# TASK-024 C3: all hook output is ASCII (AGENTS rule 4). No change to
+#   authorization semantics, SKIP boundary, or exit codes.
 set -e
 
 COMMIT_MSG_FILE="$1"
@@ -10,31 +12,33 @@ COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
 
 FIRST_LINE="$(echo "$COMMIT_MSG" | head -n 1)"
 
-# TASK-XXX 引用检查（023 后无豁免：chore/docs/feat 等前缀不再穿透）
+# TASK-XXX reference check (no exemption since TASK-023: conventional
+# prefixes like chore:/docs:/feat: no longer bypass this gate)
 if ! echo "$FIRST_LINE" | grep -qE "TASK-[0-9]{3,}"; then
-    echo "[FAIL] commit message 必须引用 TASK-XXX" >&2
-    echo "       当前消息首行：$FIRST_LINE" >&2
-    echo "       示例：TASK-042 feat: implement edge buffer" >&2
-    echo "       （TASK-023 起 E1 豁免移除，conventional 前缀不再免卡引用）" >&2
+    echo "[FAIL] commit message must reference TASK-XXX" >&2
+    echo "       current first line: $FIRST_LINE" >&2
+    echo "       example: TASK-042 feat: implement edge buffer" >&2
+    echo "       (since TASK-023: E1 prefix exemption removed)" >&2
     exit 1
 fi
 
-# 架构师本人通道：只跳过受保护路径判定，不跳过 TASK 引用（023 实现，原为声明未执行项）
+# Architect channel: skips the protected-path gate only, never the TASK reference
 if [ "${SKIP_PROTECTED_CHECK:-0}" = "1" ]; then
     exit 0
 fi
 
-# 受保护路径审批检查（架构师 S7；散文授权作废，唯一依据见 check_approval.py）
-# 注：commit-msg 阶段，git staged 变更可查。
-# 注：bash 侧不再重复计算 PROTECTED_HIT，权威判定由 python 侧
-# check_approval.py 重算，避免双引擎分叉。
+# Protected-path approval check (architect S7; prose authorization void,
+# sole basis: check_approval.py — active card allow_write + non-empty approver).
+# Note: at commit-msg stage, git staged changes are inspectable.
+# Note: bash side does NOT recompute PROTECTED_HIT; the authoritative
+# judgment is python-side check_approval.py (single engine, no fork).
 PYTHON="$(command -v python3 || command -v python)"
 if ! "$PYTHON" "$(git rev-parse --show-toplevel)/docs/ai-workspace/hooks/check_approval.py" --staged; then
-    echo "[FAIL] 触碰受保护路径，但无覆盖 active 卡（含非空 approver 字段）" >&2
-    echo "       修复方式：找覆盖该文件的 active 卡并请架构师填 approver 字段" >&2
-    echo "       或架构师本人设 SKIP_PROTECTED_CHECK=1" >&2
+    echo "[FAIL] protected path touched without covering active card (non-empty approver field)" >&2
+    echo "       fix: find the active card covering this file and have the architect fill its approver field" >&2
+    echo "       or the architect sets SKIP_PROTECTED_CHECK=1" >&2
     echo "" >&2
-    echo "       ⚠  .github/workflows/ 修改需架构师批准（CI 配置不能自改）" >&2
+    echo "       !  .github/workflows/ changes require architect approval (CI config is not self-modifiable)" >&2
     exit 1
 fi
 

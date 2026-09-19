@@ -217,5 +217,42 @@ class TestLifecycleCoverage(unittest.TestCase):
             self.assertFalse(ok)
 
 
+# ---------- TASK-024 C3：hook 面向输出一律 ASCII（AGENTS 规则 4） ----------
+
+class TestAsciiOutput(unittest.TestCase):
+    def _run_main(self, cards: Path, files):
+        import contextlib
+        import io
+
+        mod = load_mod()
+        buf = io.StringIO()
+        argv = ["--cards-dir", str(cards)] + list(files)
+        with contextlib.redirect_stdout(buf):
+            code = mod.main(argv)
+        return code, buf.getvalue()
+
+    def test_output_is_ascii_when_uncovered(self):
+        with TemporaryDirectory() as tmp:
+            cards = Path(tmp)
+            code, out = self._run_main(cards, ["tests/a/b.txt"])
+            self.assertEqual(code, 1)
+            self.assertTrue(out.isascii(), f"non-ASCII hook output: {out!r}")
+
+    def test_output_is_ascii_when_covered(self):
+        with TemporaryDirectory() as tmp:
+            cards = Path(tmp)
+            write_card(cards, "TASK-901.yaml", ["tests/**"], True)
+            code, out = self._run_main(cards, ["tests/a/b.txt"])
+            self.assertEqual(code, 0)
+            self.assertTrue(out.isascii(), f"non-ASCII hook output: {out!r}")
+
+    def test_output_is_ascii_when_unprotected(self):
+        with TemporaryDirectory() as tmp:
+            cards = Path(tmp)
+            code, out = self._run_main(cards, ["docs/a.md"])
+            self.assertEqual(code, 0)
+            self.assertTrue(out.isascii(), f"non-ASCII hook output: {out!r}")
+
+
 if __name__ == "__main__":
     unittest.main()
