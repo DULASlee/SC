@@ -1,0 +1,51 @@
+id: TASK-030
+title: "钩子/门禁输出 ASCII 化余面（024 C3 余面，另开卡不回扩 024）"
+status: ready
+approver: architect
+created: 2026-09-19T16:00:00Z
+created_by: architect
+
+scope:
+  allow_write:
+    - docs/ai-workspace/hooks/pre-push
+    - .harness/scripts/validate-task-card.py
+    - scripts/check-contract-consistency.py
+    - .harness/tests/test_validate_task_card.py
+    - .harness/tasks/active/TASK-030.yaml
+    - docs/ai-workspace/rules/lessons-learned.md
+    - docs/testing/red/TASK-030/**
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 200
+  max_files_changed: 8
+
+depends_on: []
+
+references:
+  - docs/testing/red/TASK-024/scan-report.md (C3 余面清单，本卡即其落地)
+
+notes: |
+  架构师 024 裁定①：C3 余面另开卡，不回扩 024（024 保持 CLOSED）。
+  本卡 = 024 scan-report「C3 余面」三项的 ASCII 化收口：
+  1. docs/ai-workspace/hooks/pre-push：行 12/23/37/42/44/49/51/56/60/63 中文输出 → ASCII。
+  2. .harness/scripts/validate-task-card.py：echo/print 中文 → ASCII（pre-commit 子步骤输出）。
+  3. scripts/check-contract-consistency.py：输出中文 → ASCII（pre-commit 子步骤输出）。
+  边界（023/024 冻结面）：只改输出内容，不改授权判定 / 保护路径集 / exit code /
+  fail-closed 行为 / SKIP_PROTECTED_CHECK 权限边界。
+  验收（022 先例）：acceptance_tests = 真实可跑工程（ArchitectureTests，dotnet test 3/3）；
+  本卡专属证据 = 各脚本输出断言（无非 ASCII 字节），入 docs/testing/red/TASK-030/。
+  铁律 15（执行器链路 canary）：本卡不触 executor_argv/执行机器，无需 probe。
