@@ -1,6 +1,6 @@
 id: TASK-022
 title: "治理机器文件 scope 覆盖：dispatcher/poll/hooks/checker 脚本集"
-status: ready
+status: in-progress
 approver: architect
 created: 2026-09-19T09:00:00Z
 created_by: architect
@@ -68,3 +68,4 @@ notes: |
   - tests/ArchitectureTests/ArchitectureTests.csproj 存在且 dotnet test 通过（3/3）。
   - 对应脚本单测存在且通过：.harness/tests/test_dispatch.py、.harness/tests/test_poll.py。
   - 本卡 active 后，触碰本卡 allow 文件的提交在 check_approval 门禁放行。
+
