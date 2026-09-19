@@ -57,3 +57,9 @@
 ```
 
 总体：ALL PASS
+## R4（真实案例，非生成脚本）：首个 023 提交被新门禁拦截
+
+- 首次 git commit -- <23 paths> 被 commit-msg 拒：暂存区遗留前会话 9 个受保护文件
+  （dispatch.yaml/schema/canary.py/modelswap.py/poll.py/replan.py/runs.py/PILOT-CHECKLIST.md/test_gates.py）无覆盖卡。
+- 处置：git reset -- 移出暂存（工作树内容保留，未丢失），重跑 check_approval --staged → [OK]，重提交通过。
+- 证明：纯 path 判定对「索引里夹带的未授权保护路径提交」真实生效（R2 在真实仓库的实例）。
