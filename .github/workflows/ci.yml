@@ -13,7 +13,14 @@ on:
       - 'BannedSymbols.txt'
       - 'contracts/**'
       - '*.csproj'
-      # docs/harness/superpowers 变更只触发 contract-consistency（节省 CI 资源）
+      # 门禁与治理文件变更必须跑 CI（L3 scope 检查 / 任务卡校验 / 契约一致性）
+      # TASK-017: 纯文档/治理 PR 不再绕过门禁
+      - '.harness/**'
+      - 'docs/ai-workspace/**'
+      - 'docs/architecture/**'
+      - '.githooks/**'
+      - 'AGENTS.md'
+      - '.github/workflows/**'
   pull_request:
     branches: [main, develop]
     paths:
@@ -25,7 +32,14 @@ on:
       - 'BannedSymbols.txt'
       - 'contracts/**'
       - '*.csproj'
-      # docs/harness/superpowers 变更只触发 contract-consistency（节省 CI 资源）
+      # 门禁与治理文件变更必须跑 CI（L3 scope 检查 / 任务卡校验 / 契约一致性）
+      # TASK-017: 纯文档/治理 PR 不再绕过门禁
+      - '.harness/**'
+      - 'docs/ai-workspace/**'
+      - 'docs/architecture/**'
+      - '.githooks/**'
+      - 'AGENTS.md'
+      - '.github/workflows/**'
 
 jobs:
   # L1-alpha 阶段建立的契约一致性检查

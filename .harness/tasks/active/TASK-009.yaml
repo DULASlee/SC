@@ -11,6 +11,8 @@ scope:
     - .githooks/**
     - .github/workflows/**
     - .harness/tasks/active/TASK-009.yaml
+    # TASK-017: 铁律 12 强制每卡追加经验，allow 必须覆盖经验库
+    - docs/ai-workspace/rules/lessons-learned.md
   deny_write:
     - src/**
     - tests/**
