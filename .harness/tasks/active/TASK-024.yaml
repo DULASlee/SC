@@ -53,3 +53,9 @@ notes: |
   验收按 022 先例：acceptance_tests 指向真实可跑工程（ArchitectureTests，dotnet test 3/3）；
   本卡专属验收 = AT-0 扫描报告 + 逐项红绿证据（docs/testing/red/TASK-024/）。
   铁律 15（执行器链路 canary）：本卡不触 executor_argv/执行机器，无需 probe。
+  closeout（架构师 2026-09-19 裁定 R1-C：实施落地即归档，裁定非自报）：
+  AT-0 声明项扫描落地 @cac0bc2（C1 EXEMPT_PREFIXES 死声明随 C4 整文件删除；C2 教育提示
+  统一现行模型；C3 四脚本输出 ASCII 化 + 3 项断言；C4 全仓 17 处引用分类后删
+  check-protected-paths.py + pre-commit:15；C5 deny_write 四执行点证据销项；C6 保留
+  check_local_scope_compat；C7 WARN 维持）。证据 docs/testing/red/TASK-024/（scan-report +
+  deny-evidence）。
