@@ -21,7 +21,7 @@
 
 每个 active 任务卡有 `scope.allow_write` 与 `scope.deny_write`。
 
-- pre-commit hook（`.harness/scripts/check-protected-paths.py`）会拦截 **超出 scope 的文件修改**。
+- pre-commit hook（`.harness/scripts/check-local-scope.py`）会拦截 **超出 scope 的文件修改**；受保护路径（tests/**、.harness/** 等）的审批由 commit-msg hook + `check_approval.py` 按纯 path 判定（覆盖 active 卡 allow_write + 非空 approver）。check-protected-paths.py 已随 TASK-024 C4 删除。
 - 即使 allow_write 列出路径，`deny_write` 优先级更高。
 - 添加新路径到 scope 必须由架构师修订任务卡（状态变更需要 commit）。
 
