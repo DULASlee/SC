@@ -99,6 +99,10 @@ def main() -> int:
     except OSError as exc:
         # 可执行文件缺失 / 无权限等：仍落盘并返回 0，让 poll 判 fail-exec
         out, err, rc = "", f"run-exec: {type(exc).__name__}: {exc}\n", -1
+        # 显式失败信号（防"包装器自身崩了"静默混同"任务失败"）：
+        # 缺命令/OSError 是最常见的一类静默降级点——poll 侧只认 exitcode.txt，
+        # 包装器不打这行 [FAIL] 时，排查"为什么这个 run 是 exitcode=-1"就得翻 stderr.log。
+        print(f"[FAIL] run-exec: OSError {type(exc).__name__}: {exc} (rc 落盘为 -1)", file=sys.stderr)
 
     _write_result(run_dir, out, err, rc)
     print(f"[OK] run-exec: exit={rc} cmd={cmd[0]}")

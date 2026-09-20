@@ -2,8 +2,8 @@
 """RUNS.jsonl 运行记录库（append-only 事件日志）。
 
 记录字段：task_id, attempt, pid, worktree, branch, run_dir, model, executor,
-status, started_at, finished_at, exit_code, verdict,
-stage, owner, sig_history, prev_model, model_swapped。
+status, started_at, finished_at, exit_code, verdict, upstream_fault,
+upstream_streak, stage, owner, sig_history, prev_model, model_swapped。
 status ∈ {running, spawning, awaiting-review, retrying, blocked, error,
 done-stage, pr-open, pr-manual}
 verdict ∈ {none, pass, fail-exec, fail-skill, fail-scope, fail-scale,
@@ -50,7 +50,8 @@ class RunsStore:
     def append(self, rec: dict) -> dict:
         full = {
             "status": "running", "started_at": _now(), "finished_at": None,
-            "exit_code": None, "verdict": "none",
+            "exit_code": None, "verdict": "none", "upstream_fault": False,
+            "upstream_streak": 0,
             "stage": "execute", "owner": "dispatch", "sig_history": [],
             "prev_model": None, "model_swapped": False,
         }
@@ -98,3 +99,13 @@ class RunsStore:
 
     def attempts(self, task_id: str) -> int:
         return sum(1 for r in self._read_all() if r["task_id"] == task_id)
+
+    def budget_attempts(self, task_id: str) -> int:
+        """预算计数：只计 upstream_fault 非真的记录数。
+
+        上游故障（无健康上游 / provider 错误等短语命中）不消耗重试预算。
+        上游连续计数另由 upstream_streak 字段跟踪（见 poll）。
+        """
+        return sum(1 for r in self._read_all()
+                   if r["task_id"] == task_id
+                   and not r.get("upstream_fault"))

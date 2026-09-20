@@ -202,6 +202,26 @@ def restore(sp: Path, provider: str | None, model: str | None) -> None:
     _write_doc(sp, doc)
 
 
+def snapshot(sp: Path, tag: str, dest_dir: Path) -> Path:
+    """快照当前 settings 文件 → dest_dir/settings.snapshot.<tag>.<ts>.yaml。"""
+    sp = Path(sp)
+    dest = Path(dest_dir)
+    dest.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    out = dest / f"settings.snapshot.{tag}.{ts}.yaml"
+    if sp.exists():
+        out.write_bytes(sp.read_bytes())
+    else:
+        _write_doc(out, _read_doc(sp))
+    return out
+
+
+def verify_selection(sp: Path, provider: str | None,
+                     model: str | None) -> bool:
+    """DSH 现状是否等于 (provider, model)。"""
+    return read_selection(Path(sp)) == (provider, model)
+
+
 def _store_label(store) -> str:
     """静默吞错告警用的文件标签：优先 store.path。"""
     return str(getattr(store, "path", store))

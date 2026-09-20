@@ -47,7 +47,11 @@ def _used_escalations(history_prefix: list) -> int:
     return runs
 
 
-def plan_retry(history, attempts_used, max_allowed, fallbacks) -> dict:
+FREEZE_NOTE = "fallback 就绪但 pilot 冻结，需人工批准"
+
+
+def plan_retry(history, attempts_used, max_allowed, fallbacks,
+               auto_fallback: bool = True) -> dict:
     hist = list(history or [])
     tail = _trailing_run_len(hist)
     if tail >= 3:
@@ -56,8 +60,20 @@ def plan_retry(history, attempts_used, max_allowed, fallbacks) -> dict:
             "model_override": None,
             "note_prefix": "",
             "reason": BLOCKED_REASON,
+            "model_fallback_hit": False,
         }
     if tail == 2:
+        # 冻结只冻“换模型”，不冻“重试”，更不转人工队列：
+        # auto_fallback=False 时一律同模型重试（model_override=None），
+        # note 保留升级前缀 + 冻结说明，RUNS 照记 model_fallback_hit=False。
+        if not auto_fallback:
+            return {
+                "action": "retry_escalated",
+                "model_override": None,
+                "note_prefix": f"{ESCALATE_PREFIX}{FREEZE_NOTE}",
+                "reason": "同一失败连续出现第2次，fallback 就绪但 pilot 冻结",
+                "model_fallback_hit": False,
+            }
         fbs = list(fallbacks or [])
         used = _used_escalations(hist[:-1])
         model = fbs[used] if used < len(fbs) else None
@@ -66,10 +82,12 @@ def plan_retry(history, attempts_used, max_allowed, fallbacks) -> dict:
             "model_override": model,
             "note_prefix": ESCALATE_PREFIX,
             "reason": "同一失败连续出现第2次，策略升级重试",
+            "model_fallback_hit": model is not None,
         }
     return {
         "action": "retry_same",
         "model_override": None,
         "note_prefix": "",
         "reason": "首次失败，原样重试",
+        "model_fallback_hit": False,
     }

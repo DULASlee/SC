@@ -16,9 +16,16 @@ max_tasks_per_run: 10
 worktree_root: .harness/worktrees
 runs_dir: .harness/runs
 
-model_fallbacks: []
+model_fallbacks: ["cohere/north-mini-code:free", "nvidia/nemotron-3-super-120b-a12b:free"]
+auto_fallback: true
 loop_interval_seconds: 120
 prompt_budget: {failure_note_max_chars: 2000, skill_max_bytes: 12288}
 pr_enabled: false
-skills_dir: C:/Users/admin/.claude/skills/superpowers
+# skill 唯一源：docs/ai-workspace/skills/（AGENTS.md 原则 6：AI 配置唯一源在
+# docs/ai-workspace/，禁止在 IDE 私有目录维护副本）。
+# skills.py 候选规则：base/<name>/SKILL.md 与 base/superpowers/<name>/SKILL.md，
+# 因此任务卡直接写 superpowers skill 名（如 writing-plans）或 "superpowers/<name>"
+# 都能命中。2026-09-21 修复：原值指向 C:\Users\admin\.claude\skills\superpowers
+# （Claude 私有副本，与项目源脱钩，且部分 junction 目标缺 SKILL.md 时静默跳过）。
+skills_dir: F:/JQKJ/docs/ai-workspace/skills
 dsh_settings: null
