@@ -1,6 +1,7 @@
 id: TASK-044
 title: "L1 模型会话隔离：per-attempt 设置副本 + --patch 重定向，退役全局 swap"
-status: draft
+status: ready
+approver: architect
 created: 2026-09-20T16:20:00Z
 created_by: strong-model
 

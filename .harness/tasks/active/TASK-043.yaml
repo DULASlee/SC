@@ -1,6 +1,7 @@
 id: TASK-043
 title: "L1 协调基础：协调根 + 跨进程锁 + 双账本临界区与并发崩溃安全"
-status: draft
+status: ready
+approver: architect
 created: 2026-09-20T16:20:00Z
 created_by: strong-model
 

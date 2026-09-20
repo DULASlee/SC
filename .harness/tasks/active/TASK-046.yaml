@@ -1,6 +1,7 @@
 id: TASK-046
 title: "P6 真实三 worktree 并发验证与完工报告（V1-V10 + Gate A-G）"
-status: draft
+status: ready
+approver: architect
 created: 2026-09-20T16:20:00Z
 created_by: strong-model
 
