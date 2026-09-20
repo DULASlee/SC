@@ -124,5 +124,29 @@ class TestCardSelfAuthorized(unittest.TestCase):
         self.assertIsNone(mod.card_self_authorized(card, SELF_CARD))
 
 
+class TestAssembleArgv(unittest.TestCase):
+    """TASK-044：--patch 注入位序（启动器参数必须在 prompt 位置参数之前）。"""
+
+    def test_override_tokens_injected_before_prompt(self):
+        mod = load_dispatch()
+        cfg = {"executor_argv": ["dsh", "--profile", "headless", "{prompt}"]}
+        argv = mod.assemble_executor_argv(cfg, "PROMPT",
+                                          ["--patch", "C:/x/m.patch.yml"])
+        self.assertEqual(argv, ["dsh", "--profile", "headless",
+                                "--patch", "C:/x/m.patch.yml", "PROMPT"])
+
+    def test_no_override_matches_legacy_replace(self):
+        mod = load_dispatch()
+        cfg = {"executor_argv": ["python", "-c", "print(1)", "{prompt}"]}
+        self.assertEqual(mod.assemble_executor_argv(cfg, "P", []),
+                         ["python", "-c", "print(1)", "P"])
+
+    def test_embedded_placeholder_compatible(self):
+        mod = load_dispatch()
+        cfg = {"executor_argv": ["app", "--ask={prompt}"]}
+        self.assertEqual(mod.assemble_executor_argv(cfg, "Q", ["--patch", "p"]),
+                         ["app", "--ask=Q"])
+
+
 if __name__ == "__main__":
     unittest.main()

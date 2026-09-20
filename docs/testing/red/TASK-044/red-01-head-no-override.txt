@@ -1,0 +1,4 @@
+== HEAD(043-tip) probe, expect RED ==
+RED-CONFIRMED build_session_override
+RED-CONFIRMED assemble_executor_argv
+RED-CONFIRMED spawn still mutates global settings

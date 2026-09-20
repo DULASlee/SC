@@ -1,0 +1,2 @@
+=== canary 真实拦截（2026-09-21 00:4x，--dry-run 被铁律15门拒绝，未绕过）===
+output: canary_required：先跑 canary.py 留证  (exit 0, 整轮拒绝)

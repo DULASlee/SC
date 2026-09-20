@@ -298,3 +298,43 @@ def maybe_restore(sp: Path, store,
     provider, model = prev[0], prev[1]
     restore(Path(sp), provider, model)
     return provider, model
+
+
+# ---------- TASK-044：会话级覆盖（新主路径；上面 swap/restore 链退役为死代码）----------
+#
+# v1.1 §12 / 评审报告 §7 探针实证：DSH 值优先级 = 用户文件层 > 组合层，
+# 故会话覆盖不 patch 模型条目、而是把 settings 文件整体重定向到 per-attempt
+# 副本。旧"读全局→备份→改写全局→跑→恢复"链（本文件上方）从此不再被派发
+# 路径调用；保留仅为过渡期与 test_gates 既有覆盖。物理删除需连同 test_gates
+# 改写，属另一张卡（本卡 allow_write 不含 test_gates.py，不越界）。
+
+
+def build_session_override(sp: Path, run_dir: Path,
+                           provider: str, model: str) -> list[str]:
+    """生成会话级模型覆盖的 spawn 附加参数（v1.1 §12 定案机制）。
+
+    1) 基线文件 sp 只读载入（保留全部其他命名空间：provider 配置等）；
+    2) agent-default-model 换成本任务 (provider, model)，原子写
+       <run_dir>/settings.yaml（随 attempt 生灭，不污染他处）；
+    3) 写 <run_dir>/model.patch.yml：把组合树 settings 条目 config.path
+       指向副本并 watch: false（文件层值优先组合层；关监视器防热发布）；
+    4) 返回 ["--patch", <patch 绝对路径 posix>]，由 assemble_executor_argv
+       注入在 {prompt} 之前（dsh 启动器参数须先于位置参数）。
+
+    全程对基线文件零写入；无跨进程状态、无锁、无恢复。
+    """
+    sp = Path(sp)
+    run_dir = Path(run_dir)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    doc = _read_doc(sp)
+    doc["agent-default-model"] = {"provider": provider, "model": model}
+    copy = (run_dir / "settings.yaml").resolve()
+    _write_doc(copy, doc)
+    patch = (run_dir / "model.patch.yml").resolve()
+    patch.write_text(
+        "- id: settings\n"
+        "  config:\n"
+        f"    path: {copy.as_posix()}\n"
+        "    watch: false\n",
+        encoding="utf-8")
+    return ["--patch", patch.as_posix()]

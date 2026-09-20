@@ -1,0 +1,3 @@
+tokens: ['--patch', 'C:/Users/admin/AppData/Local/Temp/tmp8iips4qo/r1/model.patch.yml']
+OLD-assembly argv keeps --patch tokens: False
+NEW-assembly argv: ['dsh', '--profile', 'headless', '--patch', 'C:/Users/admin/AppData/Local/Temp/tmp8iips4qo/r1/model.patch.yml', 'P']

@@ -19,6 +19,7 @@ sys.path.insert(0, str(HARNESS_DIR / "scripts"))
 from runs import RunsStore  # noqa: E402
 from skills import DEFAULT_SKILLS_BY_STAGE  # noqa: E402
 from dispatch import (  # noqa: E402
+    assemble_executor_argv,
     build_prompt,
     card_self_authorized,
     ensure_worktree,
@@ -26,7 +27,9 @@ from dispatch import (  # noqa: E402
     load_config,
     resolve_model,
     write_skills_file,
+    _dsh_settings_path,
 )
+from modelswap import build_session_override, split_model  # noqa: E402
 from dispatch import spawn_attempt as dispatch_spawn_attempt  # noqa: E402
 import poll as poll_mod  # noqa: E402
 
@@ -236,7 +239,15 @@ def spawn_stage(task_id: str, card: dict, cfg: dict, store: RunsStore,
     prompt = build_prompt(ctx.resolve(), model, failure_note, skills_ctx)
     prompt = (f"[{stage}] {prompt}\n产物一律写 worktree 相对路径，"
               f"不要写绝对路径。run_dir={run_dir.as_posix()}")
-    argv = [a.replace("{prompt}", prompt) for a in cfg["executor_argv"]]
+    # TASK-044：pipeline 路径与 dispatch 同一会话覆盖机制（全局配置零写入；
+    # 旧实现此分支不做任何覆盖，模型跟随全局现状——两路径行为不一致的缺陷
+    # 一并修复，登记见 EXISTING-MAP P0 补漏 3）。
+    provider, model_part = split_model(model)
+    override_tokens: list[str] = []
+    if provider:
+        override_tokens = build_session_override(
+            _dsh_settings_path(cfg), run_dir, provider, model_part)
+    argv = assemble_executor_argv(cfg, prompt, override_tokens)
     # 原子性：先落盘(spawning, pid=None)后拉起，避免 Popen 成功但落盘前崩溃的孤儿进程
     rec = store.append({"task_id": task_id, "attempt": n, "pid": None,
                         "worktree": str(wt), "branch": f"feat/{task_id}",

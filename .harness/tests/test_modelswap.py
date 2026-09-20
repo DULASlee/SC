@@ -258,5 +258,67 @@ class TestMaybeRestore(unittest.TestCase):
             self.assertIsNone(mod.maybe_restore(sp, store))
 
 
+class TestSessionOverride(unittest.TestCase):
+    """TASK-044：会话覆盖构造器（评审报告 §7 机制的离线断言面）。"""
+
+    def _base(self, tmp):
+        sp = Path(tmp) / "settings.yaml"
+        sp.write_text(SETTINGS, encoding="utf-8")
+        return sp
+
+    def test_copy_preserves_namespaces_and_swaps_selection(self):
+        mod = load_modelswap()
+        import hashlib
+        import yaml
+        with TemporaryDirectory() as tmp:
+            sp = self._base(tmp)
+            before = hashlib.sha256(sp.read_bytes()).hexdigest()
+            tokens = mod.build_session_override(
+                sp, Path(tmp) / "run1", "openrouter", "cohere/x:free")
+            data = yaml.safe_load(
+                (Path(tmp) / "run1" / "settings.yaml").read_text(
+                    encoding="utf-8"))
+            self.assertEqual(data["agent-default-model"],
+                             {"provider": "openrouter", "model": "cohere/x:free"})
+            self.assertIn("ui-onboarding", data)   # 其他键保留
+            self.assertIn("llm-pi-ai", data)
+            self.assertEqual(
+                hashlib.sha256(sp.read_bytes()).hexdigest(), before)  # 基线零写入
+            self.assertEqual(tokens[0], "--patch")
+
+    def test_patch_redirects_settings_with_watch_false(self):
+        mod = load_modelswap()
+        with TemporaryDirectory() as tmp:
+            sp = self._base(tmp)
+            mod.build_session_override(sp, Path(tmp) / "r2", "p1", "m1")
+            patch = (Path(tmp) / "r2" / "model.patch.yml").read_text(
+                encoding="utf-8")
+            self.assertIn("- id: settings", patch)
+            self.assertIn("path:", patch)
+            self.assertIn("settings.yaml", patch)
+            self.assertIn("watch: false", patch)
+
+    def test_two_sessions_isolated_baseline_untouched(self):
+        """V4 的单元级模拟：A/B 各建副本，互不污染，基线纹丝不动。"""
+        mod = load_modelswap()
+        import hashlib
+        import yaml
+        with TemporaryDirectory() as tmp:
+            sp = self._base(tmp)
+            before = hashlib.sha256(sp.read_bytes()).hexdigest()
+            mod.build_session_override(sp, Path(tmp) / "A", "prov-a",
+                                       "model-a")
+            mod.build_session_override(sp, Path(tmp) / "B", "prov-b",
+                                       "model-b")
+            a = yaml.safe_load((Path(tmp) / "A" / "settings.yaml").read_text(
+                encoding="utf-8"))
+            b = yaml.safe_load((Path(tmp) / "B" / "settings.yaml").read_text(
+                encoding="utf-8"))
+            self.assertEqual(a["agent-default-model"]["model"], "model-a")
+            self.assertEqual(b["agent-default-model"]["model"], "model-b")
+            self.assertEqual(
+                hashlib.sha256(sp.read_bytes()).hexdigest(), before)
+
+
 if __name__ == "__main__":
     unittest.main()

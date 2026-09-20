@@ -25,8 +25,7 @@ sys.path.insert(0, str(HARNESS_DIR / "scripts"))
 from runs import RunsStore  # noqa: E402  (同目录库导入)
 from skills import cap_text, load_skill_texts  # noqa: E402
 from modelswap import (  # noqa: E402
-    DEFAULT_SETTINGS, acquire_lock, read_selection, release_lock,
-    split_model, swap_for_run)
+    DEFAULT_SETTINGS, build_session_override, split_model)
 from canary import is_required as canary_is_required  # noqa: E402
 from coord import acquire, release, touch  # noqa: E402  (TASK-043)
 
@@ -132,19 +131,23 @@ def capacity_used(stores) -> int:
     return sum(running_count(s) for s in stores)
 
 
-def _model_aligned(card: dict, cfg: dict) -> bool:
-    """无自带 model 的卡要求 DSH 现状 == 全局 model（provider+model 全比）。
+def assemble_executor_argv(cfg: dict, prompt: str,
+                           override_tokens=()) -> list[str]:
+    """组装拉起 argv（TASK-044）。
 
-    有自带 model 的卡走派发时 swap，不在此处拦截。
-    """
-    if card.get("model"):
-        return True
-    try:
-        cur = read_selection(_dsh_settings_path(cfg))
-    except Exception:
-        cur = (None, None)
-    gprov, gmodel = split_model(cfg["model"])
-    return tuple(cur) == (gprov, gmodel)
+    {prompt} 占位处先注入会话覆盖参数（["--patch", <patch>]）、再落 prompt：
+    dsh 启动器参数必须位于位置参数之前（评审报告 §7 探针实证）；
+    "--x={prompt}" 内嵌占位形态一并兼容。"""
+    argv: list[str] = []
+    for a in cfg["executor_argv"]:
+        if a == "{prompt}":
+            argv.extend(override_tokens)
+            argv.append(prompt)
+        elif "{prompt}" in a:
+            argv.append(a.replace("{prompt}", prompt))
+        else:
+            argv.append(a)
+    return argv
 
 
 def build_prompt(context_abs: Path, model: str, failure_note: str | None,
@@ -268,30 +271,20 @@ def spawn_attempt(task_id: str, card: dict, cfg: dict, store: RunsStore,
             skills_ctx = (f"附带的 skill 工作流（必须遵守）："
                           f"{spath.resolve().as_posix()}")
     provider, model_part = split_model(eff)
-    swapped = False
-    # prev_model 唯一形状：[provider, model] 二元 list（读时校验长度2）
-    prev_combined: list | None = None
-    if provider:
-        runs_dir = REPO_ROOT / cfg["runs_dir"]
-        sp = _dsh_settings_path(cfg)
-        acquire_lock(runs_dir)
-        try:
-            prev = swap_for_run(sp, provider, model_part, runs_dir)
-        finally:
-            release_lock(runs_dir)
-        if prev is not None:
-            swapped = True
-            pp, pm = prev
-            prev_combined = [pp, pm]
     prompt = prompt_override or build_prompt(
         ctx.resolve(), eff, failure_note, skills_ctx)
-    argv = [a.replace("{prompt}", prompt) for a in cfg["executor_argv"]]
     run_dir = REPO_ROOT / cfg["runs_dir"] / task_id / f"attempt-{attempt}"
+    # TASK-044 会话覆盖：基线只读 → 副本+patch 落本 attempt 的 run_dir，
+    # 全局配置零写入，无需锁/备份/恢复（评审报告 §7 探针实证的机制）。
+    override_tokens: list[str] = []
+    if provider:
+        override_tokens = build_session_override(
+            _dsh_settings_path(cfg), run_dir, provider, model_part)
+    argv = assemble_executor_argv(cfg, prompt, override_tokens)
     # 原子性：先落盘(spawning)后拉起，避免 Popen 成功但 append 前崩溃的孤儿进程
     store.append({"task_id": task_id, "attempt": attempt, "pid": None,
                   "worktree": str(wt), "branch": f"feat/{task_id}",
                   "run_dir": str(run_dir), "model": eff,
-                  "model_swapped": swapped, "prev_model": prev_combined,
                   "stage": stage, "owner": owner,
                   "status": "spawning",
                   "executor": " ".join(argv[:3])})
@@ -413,27 +406,12 @@ def main() -> int:
         if not card_validates(card_path):
             print(f"[SKIP] {card['id']} 任务卡校验失败")
             continue
-        if not _model_aligned(card, cfg):
-            print(f"[SKIP] {card.get('id', card_path.name)} 模型未对齐 "
-                  f"fail-fast：DSH 现状与全局模型 {cfg['model']} 不一致，不派发")
-            continue
         queue.append((card_path, card))
 
-    # 同轮多模型竞态收敛：按 resolve 后模型分组，同轮只派第一组模型相同的卡。
-    # DSH 在进程启动瞬间读 settings.yaml，全局 swap 方案下跨轮仍有毫秒级竞态
-    # 窗口（上一轮收尾 restore 与下一轮 swap 之间）；但持锁 swap 区间仅毫秒级
-    # （读 + 备份 + 原子写），且同轮内已无多模型交错，故残余窗口可接受。
-    round_queue: list[tuple[Path, dict]] = queue
-    if queue:
-        first_model = resolve_model(queue[0][1], cfg)
-        round_queue = [item for item in queue
-                       if resolve_model(item[1], cfg) == first_model]
-        for cp, cc in queue:
-            if resolve_model(cc, cfg) != first_model:
-                print(f"[SKIP] {cc.get('id', cp.name)} 本轮模型 "
-                      f"{resolve_model(cc, cfg)} 与已派发组不同，顺延下轮")
+    # TASK-044：会话覆盖后模型选择按 spawn 独立生效——旧"模型未对齐 fail-fast"
+    # 与"同轮只派同模型组"均为全局 swap 方案的竞态降级，随该方案一起退役。
     slots = cfg["concurrency"] - capacity_used(ledger_stores)
-    todo = round_queue[: max(0, min(slots, cap))]
+    todo = queue[: max(0, min(slots, cap))]
     print(f"[INFO] 可派发 {len(queue)}，空槽 {slots}，本轮派 {len(todo)}")
     if args.dry_run:
         for _, c in todo:
