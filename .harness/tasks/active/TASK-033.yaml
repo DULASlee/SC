@@ -79,6 +79,9 @@ notes: |
   - 判据 3：validate --all 全 OK（18+1 卡，含 drafts 扫描）；CI validate job 转绿。
   - 判据 4 自检回路：新增 3 项单测（test_validate_task_card：ghost_field 拦截点名 /
     枚举违规拒绝 / 已声明字段通过），套件 139/139。
+  - 架构师审计补强（6bf56b2）：判据 5 补场景 A3（approver=strong-model，枚举外合法
+    值区分——单值枚举下原 A2 退化为「字段在 schema」的重复验证，无独立信息量；
+    A3 才是「合法值走通 vs 填错角色」的真实增量）。套件 140/140。
   - 红灯成因归档（架构师「为何未被更早捕获」之问）：28c0f06 批量写 approver 时
     schema 未同步 → 分叉静默 3 轮；根因 = 023 施工时 validate 无逐字段声明检测
     （additionalProperties 笼统报错不点名）→ 本卡点名层 + drafts 扫描 + 判据 5
