@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "jqkj-search": {
+      "command": "python",
+      "args": ["docs/ai-workspace/tools/jqkj-search/jqkj_search_mcp.py"]
+    }
+  }
+}
