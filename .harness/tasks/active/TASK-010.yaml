@@ -1,6 +1,7 @@
 id: TASK-010
 title: "铁律 13 + 14 写入 + 符号链接建立说明"
-status: ready
+status: in-progress
+approver: architect
 created: 2026-09-18T00:00:00Z
 created_by: architect
 scope:

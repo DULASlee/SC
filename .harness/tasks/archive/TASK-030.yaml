@@ -1,0 +1,69 @@
+id: TASK-030
+title: 钩子/门禁输出 ASCII 化余面（024 C3 余面，另开卡不回扩 024）
+status: done
+approver: architect
+created: 2026-09-19 16:00:00+00:00
+created_by: architect
+scope:
+  allow_write:
+  - docs/ai-workspace/hooks/pre-push
+  - .harness/scripts/validate-task-card.py
+  - scripts/check-contract-consistency.py
+  - .harness/tests/test_validate_task_card.py
+  - .harness/tasks/active/TASK-030.yaml
+  - docs/ai-workspace/rules/lessons-learned.md
+  - docs/testing/red/TASK-030/**
+  deny_write:
+  - src/**
+  - tests/**
+  - contracts/**
+  - .github/**
+  - Directory.Build.props
+  - Directory.Build.targets
+acceptance_tests:
+- tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+- 'ci: build'
+- 'ci: contract_consistency'
+constraints:
+  max_lines_changed: 200
+  max_files_changed: 8
+depends_on: []
+references:
+- docs/testing/red/TASK-024/scan-report.md (C3 余面清单，本卡即其落地)
+notes: '架构师 024 裁定①：C3 余面另开卡，不回扩 024（024 保持 CLOSED）。
+
+  本卡 = 024 scan-report「C3 余面」三项的 ASCII 化收口：
+
+  1. docs/ai-workspace/hooks/pre-push：行 12/23/37/42/44/49/51/56/60/63 中文输出 → ASCII。
+
+  2. .harness/scripts/validate-task-card.py：echo/print 中文 → ASCII（pre-commit 子步骤输出）。
+
+  3. scripts/check-contract-consistency.py：输出中文 → ASCII（pre-commit 子步骤输出）。
+
+  边界（023/024 冻结面）：只改输出内容，不改授权判定 / 保护路径集 / exit code /
+
+  fail-closed 行为 / SKIP_PROTECTED_CHECK 权限边界。
+
+  验收（022 先例）：acceptance_tests = 真实可跑工程（ArchitectureTests，dotnet test 3/3）；
+
+  本卡专属证据 = 各脚本输出断言（无非 ASCII 字节）：
+
+  - 改前 baseline（非 ASCII 分布 + 三处故意违规改前即拦截生效）：docs/testing/red/TASK-030/baseline.md
+
+  - 改后 outcome（P1-P5 ALL PASS：ASCII 归零 + 3 项故意违规仍拦截）：docs/testing/red/TASK-030/outcome.md
+
+  - 重跑入口：python docs/testing/red/TASK-030/run_baseline.py / run_evidence.py
+
+  铁律 15（执行器链路 canary）：本卡不触 executor_argv/执行机器，无需 probe。
+
+  closeout（架构师 2026-09-19 裁定 R1-C：实施落地即归档，裁定非自报）：
+
+  C3 余面 ASCII 化落地 @402f735（pre-push/validate-task-card/check-contract-consistency
+
+  输出归零 + 指令等价无降级 + 故意违规 3 项拦截仍生效 outcome.md P1-P5 + 6 项单测）；
+
+  卡面证据定位链接补录 @4805ae1。证据 docs/testing/red/TASK-030/（baseline.md / outcome.md）。
+
+  '
+archived_at: '2026-09-20T04:33:33.246118+00:00'

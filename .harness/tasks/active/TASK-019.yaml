@@ -1,0 +1,44 @@
+id: TASK-019
+title: "文档卫生：修正 CODEOWNERS 占位与 AGENTS.md 失效引用"
+status: ready
+approver: architect
+created: "2026-09-19T07:30:00Z"
+created_by: architect
+scope:
+  allow_write:
+    - .github/CODEOWNERS
+    - AGENTS.md
+    - docs/README.md
+    - .harness/tasks/active/TASK-019.yaml
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+constraints:
+  max_lines_changed: 200
+  max_files_changed: 8
+depends_on: [TASK-017]
+references:
+  - .github/CODEOWNERS
+  - AGENTS.md
+notes: |
+  ## 问题（TASK-017 调查中发现，按架构师决策另卡处理）
+  1. .github/CODEOWNERS 全部 owner 为占位 @org/architecture-leads（非真实 GitHub
+     team/user），L3 harness 目录保护实际不生效。需替换为真实 handle @DULASlee
+     或真实 team slug。
+  2. AGENTS.md「必读文件」表引用 docs/ai-workspace/rules/governance.md，
+     实际治理文件在 .harness/rules/governance.md（路径漂移，死引用）。
+  3. AGENTS.md 引用 docs/README.md（文档目录结构总览），该文件不存在（死引用）。
+
+  ## 交付
+  - CODEOWNERS：占位 → 真实 owner（架构师确认 handle/team 后落地）
+  - AGENTS.md：修正 governance.md 路径引用；docs/README.md 不存在则改为创建
+    该总览文档或移除该死引用（二选一，由实现者按文档现状判断并在 PR 说明）
+
+  ## 范围
+  纯文档/配置卫生，不碰代码；与 CI scope 门禁修复分离，单独验收。

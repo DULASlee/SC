@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-L3 PR scope 检查器 v3
+L3 PR scope 检查器 v3.1
 
 检查当前分支的所有变更是否在任务卡 allow_write 范围内，且未触碰 deny_write。
 
@@ -14,6 +14,11 @@ v3 修复（TASK-017）：
      报 [CONFIG-CONFLICT]（按铁律 deny 仍然优先、判失败），并指出需要修复任务卡
   5. 规模限制（max_lines_changed / max_files_changed）按多卡求和
   6. --task-id 支持逗号分隔多个卡
+
+v3.1 修复（TASK-029 配套）：
+  7. 任务卡按卡内容 id 字段提取稳定 TaskId，不再要求严格文件名 TASK-XXX.yaml；
+     带人类可读后缀的卡（如 TASK-021-base-url-domain-error.yaml）正常命中。
+     同 id 双卡并存时显式报冲突，不静默取一。
 
 用法（在 CI 中）：
   PR_DESCRIPTION="Closes TASK-001 ..." python .harness/scripts/check-pr-scope.py --base origin/main
@@ -141,11 +146,34 @@ DELIVERABLE_STATUSES = {"ready", "in_progress"}
 
 
 def load_task_card(task_id):
-    path = TASKS_DIR / f"{task_id}.yaml"
-    if not path.exists():
-        return None
-    with open(path, encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    """按卡内容 id 字段提取稳定 TaskId，查找 active 卡（v3.1，TASK-029）。
+
+    文件名可带人类可读后缀（TASK-021-base-url-domain-error.yaml），
+    以卡内 `id` 字段为唯一稳定标识；glob 仅做候选收窄，内容不符即排除。
+
+    返回 (card | None, err | None)：
+      - 恰好 1 张匹配 → (card, None)
+      - 0 张 → (None, None)，由调用方报"任务卡不存在"
+      - 多张同 id → (None, err)，治理缺陷显式暴露，不静默取一
+    """
+    matches = []
+    for path in sorted(TASKS_DIR.glob(f"{task_id}*.yaml")):
+        try:
+            with open(path, encoding="utf-8") as f:
+                card = yaml.safe_load(f)
+        except (OSError, yaml.YAMLError):
+            continue
+        if not isinstance(card, dict):
+            continue
+        if str(card.get("id", "")).strip() == task_id:
+            matches.append((path, card))
+    if len(matches) > 1:
+        names = ", ".join(p.name for p, _ in matches)
+        return None, (f"active/ 下存在 {len(matches)} 张同 id {task_id} 的任务卡"
+                      f"（{names}），同 id 冲突需先消解")
+    if not matches:
+        return None, None
+    return matches[0][1], None
 
 
 def main():
@@ -179,9 +207,13 @@ def main():
     # 2. 加载任务卡（缺失即失败，不静默跳过；非交付状态的卡不能作为 PR 授权卡）
     cards = []
     for tid in task_ids:
-        card = load_task_card(tid)
+        card, card_err = load_task_card(tid)
+        if card_err:
+            print(f"[FAIL] {card_err}")
+            sys.exit(1)
         if not card:
-            print(f"[FAIL] 任务卡不存在：.harness/tasks/active/{tid}.yaml")
+            print(f"[FAIL] 任务卡不存在：.harness/tasks/active/ 下无 id 为 {tid} 的卡"
+                  f"（按 id 字段查找，文件名可带后缀）")
             sys.exit(1)
         status = str(card.get("status", "")).strip().lower()
         if status not in DELIVERABLE_STATUSES:

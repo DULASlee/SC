@@ -1,0 +1,73 @@
+id: TASK-022
+title: "治理机器文件 scope 覆盖：dispatcher/poll/hooks/checker 脚本集"
+status: in-progress
+approver: architect
+created: 2026-09-19T09:00:00Z
+created_by: architect
+
+scope:
+  allow_write:
+    - .harness/scripts/dispatch.py
+    - .harness/scripts/poll.py
+    - .harness/scripts/check-pr-scope.py
+    - .harness/scripts/check-local-scope.py
+    - .harness/scripts/check_local_scope_compat.py
+    - .harness/tasks/active/TASK-022-harness-scripts-cover.yaml
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 300
+  max_files_changed: 10
+
+depends_on: []
+
+references:
+  - .harness/scripts/dispatch.py
+  - .harness/scripts/poll.py
+  - .harness/scripts/check-pr-scope.py
+  - .harness/scripts/check-local-scope.py
+  - .harness/scripts/check_local_scope_compat.py
+
+notes: |
+  ## 背景
+  .harness/scripts/** 下的治理机器文件（dispatcher=dispatch.py、poll=poll.py、
+  checker=check-pr-scope.py、check-local-scope.py、check_local_scope_compat.py）
+  早期没有任何任务卡覆盖其 allow_write，触碰这些文件的提交在门禁必红。
+  本卡精确枚举脚本文件（逐个核对存在），为治理脚本维修提供授权。
+
+  ## 范围说明
+  - allow 精确到文件，不用 .harness/scripts/** 通配，避免把 archive-task.py、
+    canary.py、loop.py 等非本次目标文件顺带授权。
+  - allow 含本卡 active 路径（实际后缀名 TASK-022-harness-scripts-cover.yaml）。
+  - deny 照 TASK-017/TASK-020 模板写 src/**、tests/**、contracts/**，
+    与 allow 无重叠，不触发 [CONFIG-CONFLICT]（deny 优先）。
+
+  ## 023 配套裁定（架构师，2026-09-19）
+  - 023 后 .harness/** 纯 path 判定：本卡 in-progress + approver: architect（签发记录）
+    + 自覆盖 allow_write，授权 5 个 checker/dispatcher 脚本及本卡自身文件的提交。
+  - 有限解冻窗口（022 窄窗口裁定）：仅限本卡 allow_write 已覆盖的文件恢复提交；
+    按精确文件恢复，不允许 .* / 目录通配扩权。窗口已消费（poll.py，commit 7778f64）。
+
+  ## 验收（真实可验证）
+  - tests/ArchitectureTests/ArchitectureTests.csproj 存在且 dotnet test 通过（3/3）。
+  - 对应脚本单测存在且通过：.harness/tests/test_dispatch.py、.harness/tests/test_poll.py。
+  - 本卡 in-progress 后，触碰本卡 allow 文件的提交在 check_approval 门禁放行。
+
+  ## 024 closeout 记录（2026-09-19）
+  - check-protected-paths.py 已随 TASK-024 C4（零 live 引用证明后）删除；
+    其悬空 allow_write/references 条目在本 closeout 清理（架构师裁定③：
+    属于 022 自身生命周期收口，不回开 024、不另开卡）。
+  - 022 保持 in-progress 常驻覆盖态：不派发（in-progress 卡不入 dispatch 队列）、
+    不归档（归档即失覆盖）；后续 5 脚本维修沿用本卡授权。
+

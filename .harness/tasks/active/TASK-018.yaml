@@ -1,0 +1,47 @@
+id: TASK-018
+title: "修复 DSH Windows workspace-write 沙箱 runner 0xC0000142 故障"
+status: ready
+approver: architect
+created: "2026-09-19T07:30:00Z"
+created_by: architect
+scope:
+  allow_write:
+    - .harness/tasks/active/TASK-018.yaml
+    - docs/ai-workspace/rules/lessons-learned.md
+    - docs/deployment/dsh-shell-sandbox-runbook.md
+    - docs/reports/TASK-017-ci-scope-fix-verification.md
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+constraints:
+  max_lines_changed: 300
+  max_files_changed: 10
+depends_on: [TASK-017]
+references:
+  - docs/reports/TASK-017-ci-scope-fix-verification.md
+notes: |
+  ## 背景
+  TASK-017 期间发现：DSH 在 workspace-write 沙箱模式下，其 Windows ACL restricted-token
+  runner 包装启动任意子进程都稳定返回 0xC0000142 (STATUS_DLL_INIT_FAILED)，命令零输出。
+  切到 danger-full-access（绕过 runner）后 pwsh 7.4.5 / git 2.47.1 / dotnet / python 全部正常。
+
+  ## 架构师决策（2026-09-19）
+  - 不采用"默认 danger-full-access"——那等于废掉沙箱，安全不划算。
+  - 主路径：运维修复 Windows restricted-token runner 的启动问题（DSH 宿主侧）。
+  - 轻量折中（本卡仓库侧交付）：workspace-write 会话预检 shell 可用性，
+    命中 0xC0000142 时显式提示用户切 danger-full-access，而非默默全命令失败。
+
+  ## 交付
+  - DSH 侧修复/预检（宿主，超出本仓库，排进运维批次）
+  - 仓库侧 runbook：docs/deployment/dsh-shell-sandbox-runbook.md
+    （症状、诊断顺序、0xC0000142 = runner 而非 pwsh、切档 SOP）
+
+  ## 验收
+  - workspace-write 会话 shell 不可用时给出可读的切档提示
+  - runbook 可让新工程师不依赖本会话记录独立排障
