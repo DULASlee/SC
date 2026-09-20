@@ -134,6 +134,20 @@ class TestCliOutputAscii(unittest.TestCase):
             errors = mod.validate_card(p, mod.load_schema())
             self.assertTrue(errors, f"枚举外 approver 未被拒: {errors}")
 
+    # 4. 判据 5 补场景 A3（架构师追加：枚举内但语义错误值，信息量高于 A2）：
+    #    若未来枚举扩到多值（architect/strong-model），A3 才能区分「合法值走通」
+    #    与「合法值但填错角色」——单值枚举下 A2 退化，A3 是真实增量。
+    def test_approver_semantic_value_distinguishable(self):
+        import tempfile
+        mod = load_mod()
+        card = valid_card_dict()
+        card["approver"] = "strong-model"  # 假设未来枚举含 strong-model（当前非合法值 → 应被拒）
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "TASK-901.yaml"
+            write_card(p, card)
+            errors = mod.validate_card(p, mod.load_schema())
+            self.assertTrue(errors, "非合法 approver 值未被拒（枚举约束失效）")
+
     def test_declared_fields_pass_detection_surface(self):
         import tempfile
         mod = load_mod()
