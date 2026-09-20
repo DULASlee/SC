@@ -1,6 +1,6 @@
 id: TASK-030
 title: "钩子/门禁输出 ASCII 化余面（024 C3 余面，另开卡不回扩 024）"
-status: ready
+status: done
 approver: architect
 created: 2026-09-19T16:00:00Z
 created_by: architect
