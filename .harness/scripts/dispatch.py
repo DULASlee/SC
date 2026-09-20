@@ -28,6 +28,7 @@ from modelswap import (  # noqa: E402
     DEFAULT_SETTINGS, acquire_lock, read_selection, release_lock,
     split_model, swap_for_run)
 from canary import is_required as canary_is_required  # noqa: E402
+from coord import acquire, release, touch  # noqa: E402  (TASK-043)
 
 SCRIPTS_DIR = HARNESS_DIR / "scripts"
 ACTIVE_DIR = HARNESS_DIR / "tasks" / "active"
@@ -106,15 +107,29 @@ def _dsh_settings_path(cfg: dict) -> Path:
 
 
 def running_count(store) -> int:
-    """全量 running 计数（含 pipeline），槽位计算唯一入口。
+    """全量活动计数（含 pipeline 与在途 spawning），槽位计算唯一入口。
 
-    dispatch 默认 list_running() 只看 owner=dispatch，会漏 pipeline 占的槽；
-    此处一律 owner=None 全量查询，老 store 无 owner 参数则回退无参调用。
+    TASK-043：改用 list_active——旧口径只数 running，"已 append(spawning)
+    未回填 pid"不计数，并发下会超发槽位。老 store 无 list_active 时回退。
     """
+    try:
+        return len(store.list_active(owner=None))
+    except (AttributeError, TypeError):
+        pass
     try:
         return len(store.list_running(owner=None))
     except TypeError:
         return len(store.list_running())
+
+
+def capacity_used(stores) -> int:
+    """跨账本活动占用合计（RUNS + PIPELINE）。
+
+    TASK-043：旧 running_count(store) 单文件读取，PIPELINE.jsonl 的
+    running/spawning 从不占额——"双账本槽位互通"只存在于文档断言，
+    实现与断言不符（P0 现状映射发现）。槽位判定唯一入口改为本函数。
+    """
+    return sum(running_count(s) for s in stores)
 
 
 def _model_aligned(card: dict, cfg: dict) -> bool:
@@ -382,7 +397,12 @@ def main() -> int:
     if canary_blocked:
         print("canary_required：先跑 canary.py 留证")
         return 0
-    store = RunsStore(REPO_ROOT / cfg["runs_dir"] / "RUNS.jsonl")
+    runs_dir = REPO_ROOT / cfg["runs_dir"]
+    store = RunsStore(runs_dir / "RUNS.jsonl", lock_dir=runs_dir)
+    # TASK-043：双账本统一计数——旧"槽位互通"只存在于文档断言，
+    # PIPELINE.jsonl 的活动记录此前不占额度（超发口，本次封堵）。
+    ledger_stores = [store,
+                     RunsStore(runs_dir / "PIPELINE.jsonl", lock_dir=runs_dir)]
     cap = cfg["max_tasks_per_run"] if args.max_tasks is None else args.max_tasks
 
     queue: list[tuple[Path, dict]] = []
@@ -412,7 +432,7 @@ def main() -> int:
             if resolve_model(cc, cfg) != first_model:
                 print(f"[SKIP] {cc.get('id', cp.name)} 本轮模型 "
                       f"{resolve_model(cc, cfg)} 与已派发组不同，顺延下轮")
-    slots = cfg["concurrency"] - running_count(store)
+    slots = cfg["concurrency"] - capacity_used(ledger_stores)
     todo = round_queue[: max(0, min(slots, cap))]
     print(f"[INFO] 可派发 {len(queue)}，空槽 {slots}，本轮派 {len(todo)}")
     if args.dry_run:
@@ -423,20 +443,41 @@ def main() -> int:
     dispatched = 0
     for card_path, card in todo:
         tid = card["id"]
+        # TASK-043 §5.2：容量复核→卡态复核→占坑→派发 合为一整段临界区，
+        # 消除多派发器并存时的 check-then-act 窗口（串行约定不再是正确性前提）。
         try:
-            claim_card(card_path, tid)
-        except Exception as exc:  # noqa: BLE001  占坑失败已内部回滚，跳过本卡
-            print(f"[FAIL] {tid} 占坑失败，跳过：{exc}")
-            continue
+            acquire(runs_dir, timeout=300)
+        except TimeoutError as exc:
+            print(f"[SKIP] {tid} 协调锁争用超时，本轮中止（顺延下轮）：{exc}")
+            break
         try:
-            spawn_attempt(tid, card, cfg, store, None)
-            dispatched += 1
-        except Exception as exc:  # noqa: BLE001  单任务失败不影响其余派发
-            print(f"[FAIL] {tid} 派发失败，回滚占坑：{exc}")
+            if capacity_used(ledger_stores) >= cfg["concurrency"]:
+                print(f"[SKIP] {tid} 槽位已满 "
+                      f"(cap={cfg['concurrency']})，顺延下轮")
+                continue
+            live = load_card(card_path)
+            if (live.get("status") or "") != "ready":
+                print(f"[SKIP] {tid} 卡态已被并发占用 "
+                      f"(status={live.get('status')})，跳过")
+                continue
             try:
-                commit_card_status(card_path, tid, "ready", "派发失败回滚")
-            except Exception as exc2:  # noqa: BLE001
-                print(f"[WARN] {tid} 回滚到 ready 失败，需人工处理：{exc2}")
+                claim_card(card_path, tid)
+            except Exception as exc:  # noqa: BLE001  占坑失败已内部回滚，跳过本卡
+                print(f"[FAIL] {tid} 占坑失败，跳过：{exc}")
+                continue
+            touch(runs_dir)  # claim 含 git 提交（慢），刷心跳再派发
+            try:
+                spawn_attempt(tid, live, cfg, store, None)
+                dispatched += 1
+            except Exception as exc:  # noqa: BLE001  单任务失败不影响其余派发
+                print(f"[FAIL] {tid} 派发失败，回滚占坑：{exc}")
+                try:
+                    commit_card_status(card_path, tid, "ready",
+                                       "派发失败回滚")
+                except Exception as exc2:  # noqa: BLE001
+                    print(f"[WARN] {tid} 回滚到 ready 失败，需人工处理：{exc2}")
+        finally:
+            release(runs_dir)
     print(f"[OK] 本轮派发 {dispatched} 个")
     return 0
 

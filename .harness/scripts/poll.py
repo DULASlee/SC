@@ -382,12 +382,99 @@ def _handle_record(rec: dict, cfg: dict, store: RunsStore) -> None:
                         verdict, detail = "fail-skill", detail2
                         break
     print(f"[INFO] {tid} attempt-{attempt} 判定 {verdict}：{detail}")
-    _settle(rec, cfg, store, verdict, detail, code)
+    with store.critical_section(timeout=300):
+        _settle(rec, cfg, store, verdict, detail, code)
+
+
+SPAWNING_STALE_SECONDS = 600  # 与协调锁 stale 同语义（v1.1 §11 复用）
+
+
+def gc_stale_spawned(store, limit: int = SPAWNING_STALE_SECONDS) -> int:
+    """spawning 滞留超 limit（落盘与拉起之间崩溃）→ 记 error 释放额度。
+
+    v1.1 §11：不留永久占用；执行器进程若已拉起成功，其改动在 worktree
+    未提交，复位重派会丢弃——由下一次派发复查（保守：不猜杀未知 pid）。
+    """
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    reaped = 0
+    for r in store.list_active(owner=None):
+        if r.get("status") != "spawning":
+            continue
+        try:
+            age = (now - datetime.fromisoformat(
+                r.get("started_at") or "")).total_seconds()
+        except (ValueError, TypeError):
+            age = limit + 1
+        if age <= limit:
+            continue
+        try:
+            store.update(r["task_id"], r["attempt"], status="error",
+                         verdict="fail-exec",
+                         note="stale spawning reclaimed (TASK-043)")
+        except KeyError:
+            continue
+        print(f"[WARN] {r['task_id']} attempt-{r['attempt']} spawning "
+              f"滞留超 {limit}s，已记 error 释放额度")
+        reaped += 1
+    return reaped
+
+
+def _worktree_clean(wt: Path) -> bool:
+    p = subprocess.run(["git", "-c", "core.quotepath=off", "status",
+                        "--porcelain", "-uall"], cwd=str(wt),
+                       capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    if p.returncode != 0:
+        return False
+    return not (p.stdout or "").strip()
+
+
+def gc_worktrees(cfg, store, root) -> int:
+    """B1：任务终态（无 running/spawning）+ worktree 全清洁 → 回收。
+
+    保守面：有账本记录才可回收（start-session 手工登记但无派发记录的
+    目录不在本集合）；分支与提交不删（git worktree remove 只删目录）。
+    """
+    wt_root = Path(root) / cfg["worktree_root"]
+    if not wt_root.is_dir():
+        return 0
+    recs = store._read_all()
+    active = {r["task_id"] for r in recs
+              if r.get("status") in ("running", "spawning")}
+    known = {r.get("task_id") for r in recs}
+    removed = 0
+    for d in sorted(wt_root.iterdir()):
+        if not d.is_dir():
+            continue
+        tid = d.name
+        if tid in active or tid not in known:
+            continue
+        if not _worktree_clean(d):
+            continue
+        r = subprocess.run(["git", "worktree", "remove", str(d)],
+                           cwd=str(root), capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
+        if r.returncode == 0:
+            print(f"[INFO] 回收 worktree（B1）：{tid}")
+            removed += 1
+        else:
+            print(f"[WARN] worktree 回收失败 {tid}："
+                  f"{(r.stderr or '').strip()[:120]}")
+    return removed
 
 
 def main() -> int:
     cfg = load_config()
-    store = RunsStore(REPO_ROOT / cfg["runs_dir"] / "RUNS.jsonl")
+    runs_dir = REPO_ROOT / cfg["runs_dir"]
+    store = RunsStore(runs_dir / "RUNS.jsonl", lock_dir=runs_dir)
+    # 崩溃恢复（先于回收/派发，无 running 时也要跑）
+    try:
+        with store.critical_section(timeout=300):
+            gc_stale_spawned(store)
+            gc_worktrees(cfg, store, REPO_ROOT)
+    except TimeoutError as exc:
+        print(f"[WARN] GC 本轮跳过（协调锁争用）：{exc}")
     running = store.list_running(owner="dispatch")
     print(f"[INFO] running 记录 {len(running)} 条")
     if not running:

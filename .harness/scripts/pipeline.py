@@ -68,7 +68,8 @@ def stage_skills(stage: str, card: dict) -> list[str]:
 
 def pipeline_store(cfg: dict) -> RunsStore:
     runs_dir = REPO_ROOT / cfg.get("runs_dir", ".harness/runs")
-    return RunsStore(runs_dir / PIPELINE_LEDGER)
+    # TASK-043：双账本共用同一协调临界区（写自保护 + dispatch 跨账本计数）
+    return RunsStore(runs_dir / PIPELINE_LEDGER, lock_dir=runs_dir)
 
 
 def pipe_run_dir(task_id: str, stage: str, n: int, cfg: dict) -> Path:
