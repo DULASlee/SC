@@ -3,6 +3,14 @@
     "jqkj-search": {
       "command": "python",
       "args": ["docs/ai-workspace/tools/jqkj-search/jqkj_search_mcp.py"]
+    },
+    "agentmemory": {
+      "command": "agentmemory.cmd",
+      "args": ["mcp"],
+      "env": {
+        "AGENTMEMORY_URL": "http://localhost:3111",
+        "EMBEDDING_PROVIDER": "local"
+      }
     }
   }
 }
