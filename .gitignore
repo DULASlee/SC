@@ -85,3 +85,6 @@ CNC04/
 DHH02/
 DHH04/
 MZS01/
+
+# transient root dirs (session scratch, pending architect disposition)
+.ci-fix-patch-TMP/
