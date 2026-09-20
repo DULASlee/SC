@@ -73,6 +73,33 @@ lessons 去向（架构师裁定）：**B**——20 行归位 + P4/P5 合并为 
   ② 循环中 `git add` 必须跟随门禁结果（FAIL 即中止循环，不得继续 add）；
   ③ 暂存区污染处置 SOP = `git restore --staged <paths>` + `git checkout -- <paths>`。
 
+### R6（2026-09-19 第二轮审计后新增）证据落盘纪律 + 033 补强 + 039 拆卡 + 038 前置断言
+
+- **自指缺口（架构师点破）**：022/033 的「取证结论」（18 卡回填时点、判据 5、C2 交叉核验、
+  CI 核对）当时只有文字断言，**原始 stdout 未落盘** → 038 归档时要写的证据链，其取证
+  环节本身违反证据纪律。修复：全部 git log -S / blame / CI 核对原始输出落
+  `.harness/artifacts/`（022-closeout-blame-evidence.txt / 033-approver-blame-groups.txt /
+  033-criterion5-stdout.txt / 033-ci-continue-on-error.txt），后续 038 只引用路径不复述内容。
+- **033 closeout 补强表（架构师要求：covered_by_this_change vs deferred）**：
+  - covered：approver 字段定义+枚举、点名层（未声明字段指名）、drafts 扫描、
+    判据 5 故意违规（A/B/A3）、回填清单（backfill-report.md）。
+  - **deferred → 拆 TASK-039**：「红灯不被当阻断项」流程缺口（CI validate job
+    现状待核：ci.yml:118/158 的 continue-on-error 属覆盖率观察期/stryker，
+    与 validate job 是否同构需架构师核）。039 要素：触发条件 / 责任人 /
+    最晚关闭时点 / 未关闭前人工兜底（批量提交双人复核）。
+- **034-037 放行前置（架构师裁定：机器可判定断言，非自然语言态度）**：
+  四断言任一 evidence 缺失 → 不放行（038 内 prereqs-034-037.yaml 载体）：
+  1. schema.approver.enum_locked → `git show cd5b7d3:.harness/schema/task-card.schema.json | grep -c '"enum"'` ≥ 1
+  2. validate.criterion5.all_green → `git show 6bf56b2 --stat | grep run_criterion5` 命中 + 重跑绿
+  3. validate.drafts_scan.clean → `python .harness/scripts/validate-task-card.py --all` exit 0 且含 drafts
+  4. ci.validate.non_optional → `.harness/artifacts/033-ci-continue-on-error.txt` 判定为 B/C（非 A）
+- **判据 5 口径修正（架构师裁定）**：A2 降级为「已识别的冗余设计」；
+  判据 5 实际 = 2 类真故障（幽灵字段 / 枚举外值）+ 1 类前瞻防护（A3，防未来枚举扩容）。
+- **033 面范围更正（架构师裁定）**：「033 只动自己面」表述前提有误——schema 本身
+  属阻断面（schema 变更应触发全量重校验），且 21 项清单含 archive/TASK-002 + PILOT-CHECKLIST
+  → 033 allow_write 实际覆盖整个 .harness/tasks/；新检测面（validate 点名层 + drafts 扫描）
+  必须登记为 033 名下检测面（下轮改 validate 者须查此登记）。
+
 ## §0 术语确认（架构师纠正已吸收）
 
 FROZEN 约束的准确表述：**FROZEN 卡的 allow_write 处于关闭状态，任何写入请求（无论内容多相关）都无授权通道**——是授权机制问题，不是内容匹配问题。因此本清单对 025-028 相关条目一律采用「新开独立卡 + 待开卡标记不抢跑」，不借 FROZEN 卡通道。
