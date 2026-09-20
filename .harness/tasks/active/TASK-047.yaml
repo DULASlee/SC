@@ -1,0 +1,75 @@
+id: TASK-047
+title: "退役清理：modelswap 全局 swap 死链删除 + poll 收尾死调用摘除 + README 模型路由/串行约定章节重写"
+status: ready
+approver: architect
+created: 2026-09-21T01:30:00Z
+created_by: strong-model
+
+scope:
+  allow_write:
+    - .harness/scripts/modelswap.py
+    - .harness/scripts/poll.py
+    - .harness/scripts/loop.py
+    - .harness/README.md
+    - .harness/tests/test_modelswap.py
+    - .harness/tests/test_gates.py
+    - .harness/tasks/active/TASK-047.yaml
+    - docs/testing/red/TASK-047/**
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 400
+  max_files_changed: 12
+
+depends_on: [TASK-044]
+
+references:
+  - docs/superpowers/plans/2026-09-20-parallel-session-isolation-plan-v1.1.md
+  - docs/adr/ADR-008-session-scoped-model-override.md
+  - docs/adr/ADR-010-rejection-of-legacy-parallel-models.md
+  - docs/testing/red/TASK-044/evidence.md
+
+pipeline: false
+pre_approved: true
+
+notes: |
+  ## 背景
+  TASK-044 按 [retire-scope] 教训把 swap/restore/lock/maybe_restore 链退役为
+  "死代码过渡"（当时 test_gates 不在其 allow 面）。本卡完成物理清理：
+  1) modelswap.py 删除 swap_for_run/restore/acquire_lock/release_lock/
+     maybe_restore/verify_selection/snapshot/_all_records/_bak_dir/
+     _prune_backups/_warn_store 族与 LOCK/BAK 常量与 read_selection
+     （无调用方；v1.1 §12"对账留用"由 git 历史随时找回）；保留
+     split_model/_read_doc/_write_doc/DEFAULT_SETTINGS/build_session_override；
+  2) poll.py 删除 _dsh_settings_path/finalize_model_restore 与 main 内
+     收尾死调用（残留见 045 回退后未再摘除，grep 实证）；
+  3) test_gates/test_modelswap 中**断言已退役 API 的类**改写为
+     缺席守卫（assertFalse(hasattr(...))）+ 会话覆盖断言——转换非删除，
+     铁律 4 四要件：原因=API 依 ADR-008 废止；影响=守卫+builder 用例覆盖；
+     替代=缺席守卫强于旧断言（回归即红）；人类确认=架构师授权链（对话
+     2026-09-21 立即推进+代签授权，本卡 approver 字段为其载体）。
+  4) .harness/README.md：模型路由真相改写为会话覆盖语义；"运行约定"中
+     "RUNS.jsonl 无跨进程锁、串行是前提"段更新为 coord.lock 机制（串行
+     降级为性能建议）；非目标清单标注跨进程锁已实现。
+  5) loop.py 仅注释引用修正（仿 modelswap 锁字样）。
+  ## 边界
+  不动 dispatch/pipeline/runs/coord/ownership（零引用 grep 自证）；
+  不动 canary 逻辑；不动业务面。
+  ## 验收说明
+  acceptance_tests 为形式占位（TASK-022/023 先例）。实质验收 =
+  python 全量 discover 绿（含新守卫用例）+ 全仓 grep 退役 API 零 live 引用 +
+  红态/转换证据落 docs/testing/red/TASK-047/。
