@@ -1,0 +1,16 @@
+[verify] fixture=C:\Users\admin\AppData\Local\Temp\tmpktbf5vjz
+
+=== Parallel-Safety Substrate Verification (V1-V10) ===
+  [PASS] V1 物理隔离: A 写 file-X，B/C 目录未见该文件（B=True C=True）
+  [PASS] V10 主树提交不干扰 worktree: 主树提交 rc=0，wt 分支/未提交改动完好
+  [PASS] V2 分支隔离: B 切分支后 A 分支不变（A=feat/VER-001）
+  [PASS] V3 全局额度: 并发 4 抢 cap=2 → 恰 2 成功（超额被拒）
+  [PASS] V4 机制面（per-attempt 私有副本）: 三任务副本各异、基线 SHA256 不变（dsh 消费面另跑 canary）
+  [PASS] V5 归属隔离: 非 owner 写被拒、owner 写放行
+  [PASS] V6 同任务竞争拒绝: B claim 被拒，A 仍为主（非 warning）
+  [PASS] V7 崩溃后 slot 可回收: kill→判活假→记终态→释放→active 归零
+  [PASS] V7 异常退出判活: pid=15872 死亡后判活=False
+  [PASS] V8 钩子一致性: 已领 worktree 通过、未领两个被拒；共读同一 ownership 源
+  [PASS] V9 重试链复位不破坏归属: attempt 复用同 worktree/同 session（A3-2）
+
+ALL PASS

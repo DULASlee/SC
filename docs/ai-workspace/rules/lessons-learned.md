@@ -18,7 +18,7 @@
 - [harness] 任务卡 allow_write 路径写 `src/**` 通配符 → 必须用具体路径，防止执行者越权修改
 - [TASK-008] 架构师豁免授权未用 hook 认可的语法（[APPROVED-BY:] 标记）→ 豁免必须同时满足：①口头/文本明确授权 ②commit message 含 `[APPROVED-BY: <name>]`。架构师签发豁免时应直接提供完整 merge 命令含标记
 - [hook-design] commit-msg hook 的 protected-paths 检查与铁律豁免是两层独立机制 → 铁律豁免不等于 hook 豁免，两者需分别满足。未来考虑：hook 识别"一次性豁免"关键词自动放行，或架构师设 SKIP_PROTECTED_CHECK=1
-- [parallel-sessions] 同一仓库开两个并行 AI 会话 → 分支状态不可预测、文件冲突风险。规则：同一时间只允许一个 AI 会话操作仓库
+- [parallel-sessions][superseded by ADR-010, 2026-09-21] 同一仓库开两个并行 AI 会话 → 分支状态不可预测、文件冲突风险。规则：同一时间只允许一个 AI 会话操作仓库。**已废止**：L0 worktree+ownership、L1 coord 锁+全局额度、会话模型覆盖落地（substrate 验证 11/11），单会话约束由机制替代
 - [TASK-009/010] 施工包 Phase H 期望"无 WARN"是错配 → 文件迁移（git mv）不等于全局引用更新。迁移后 grep 必然发现历史文档中的旧路径引用，这是预期行为而非缺陷。施工包应区分"迁移完整性检查"和"引用一致性检查"，后者单独开卡
 - [TASK-009/010] 历史任务卡（TASK-008.yaml）引用旧路径 → 任务卡是历史工件，不应为迁移而篡改。正确做法：保留原引用 + 加注释说明路径已变更
 - [TASK-013] 并行会话在 feature 分支上留下未授权 commit → 即使内容"看起来有用"也必须 revert/reset。混入未授权提交会污染任务卡的 scope 边界，且可能复活已删除文件。检测手段：`git log` 发现非本会话 commit → 立即暂停
@@ -97,6 +97,7 @@ px skills update 会用实体副本覆盖 Junction，更新后必须复查 LinkT
 - [model-override][2026-09-20] DSH 会话级模型隔离已探针实证可行：`dsh --patch <p.yml>` 把 settings 条目重定向到 per-attempt 设置副本（config.path + watch:false；值优先级 文件层>组合层，dsh-settings mergeLayers 顺序），全局 settings.yaml 零写入（SHA256 前后一致）→ 派发侧模型切换可纯配置实现，modelswap 的 swap/restore/锁链可退役；探针顺带实测 openrouter `deepseek/deepseek-v4-flash-0731:free` 免费档已上游 404 下线（dispatch.yaml 默认 model 行失效，待架构师改）
 - [eol-landmine][2026-09-20] CRLF 入仓的 blob × `.gitattributes` 显式 `eol=lf` 规则 = 该文件在**每个新 worktree 永久幻影脏**（status/diff 按属性先清洗工作区再比对 CRLF blob，checkout 修不好，只有 `git add --renormalize` 重规范化才行；`text=auto` 靠 safe-crlf 豁免躲过）→ 并行门禁（porcelain 算 scope/规模）会被幻影毒化成全量 fail-scope，施工前必须重规范化 + 逐文件字节级"仅剥 CR 零内容差"证明后单独特地提交
 - [card-authoring][2026-09-20] `validate-task-card` 强制 acceptance_tests ∈ `tests/` 或 `*.Tests/` → harness Python 卡按 TASK-022/023 先例：填 ArchitectureTests.csproj 形式占位，实质验收（python 测试+红态目录）写进 notes 与 allow_write；不要给此类卡挂 `skills: [test-driven-development]`——证据门禁会拿占位 csproj 比对，必判 fail-skill
+- [card-authoring][2026-09-21] [TASK-017] deny 优先坑复发：046 卡 deny `.harness/scripts/**` 吞掉 allow 的具体文件，提交被钩子当场拒（连同 045 漏列迁移测试 = 同类起草失误第二次）→ 建卡自检三条：①allow/deny 无重叠 ②acceptance_tests 路径合规 ③前卡测试被本卡改语义时，测试文件进本卡 allow
 - [git-hygiene][2026-09-21 复盘][自纠] pathspec 提交失败后改用无 pathspec 提交，把前会话遗留的两个已暂存"A"文件一并带入（TASK-024 教训第三次变体复现）→ 无 pathspec 提交前必须逐行核对 `git status --porcelain` 首列（A/M/D 皆为暂存面），新文件先 `git add` 再带 pathspec 提交
 - [retire-scope][2026-09-21] 写"退役旧链"类施工卡前，先 rg 全仓找**断言旧架构的既有测试**：断言方（如 test_gates）必须进同一卡 allow_write，否则只能死代码过渡（运行时目标达成、物理删除挂 FOLLOW-UP）——删除函数 = 改测试语义，铁律 4（禁删测试掩盖）+ 卡片 scope 双重红线
 - [single-source][2026-09-21] 前一阶段为"先跑通"登记的簿（sessions/），在后续阶段确立唯一事实源（ownership/）时必须**吸收**：旧路径删除、所有读方、旧卡测试三份全部进同一卡 allow——并行留两处 = §7.1 双事实源违例；卡片起草时漏列迁移测试，提交当场变越权（补列后透明提交）
