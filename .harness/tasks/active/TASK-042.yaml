@@ -1,6 +1,6 @@
 id: TASK-042
 title: "L0 手工会话物理隔离：start-session 入口与工作区登记强制钩子"
-status: ready
+status: in-progress
 approver: architect
 created: 2026-09-20T16:20:00Z
 created_by: strong-model
