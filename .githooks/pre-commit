@@ -15,6 +15,11 @@ source .githooks/lib/common.sh
 
 echo "=== pre-commit gate ==="
 
+# 0. L0 session registration gate (TASK-042): worktree commits require an
+#    active start-session registration; main-tree commits pass through.
+#    ASCII output (AGENTS rule 4). No bypass by design.
+python docs/ai-workspace/hooks/check_session_registration.py || fail "worktree commit not bound to a registered session (run .harness/scripts/start-session.py TASK-XXX)"
+
 # 1. Task card validation
 python .harness/scripts/validate-task-card.py --all || fail "task card validation failed"
 

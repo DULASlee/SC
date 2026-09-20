@@ -1,0 +1,61 @@
+EEEE
+======================================================================
+ERROR: test_card_in_progress_refused (tests.test_start_session.TestStartSession.test_card_in_progress_refused)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\tests\test_start_session.py", line 97, in test_card_in_progress_refused
+    ss = load_script("start-session")
+  File "F:\JQKJ\.harness\tests\test_start_session.py", line 22, in load_script
+    spec.loader.exec_module(mod)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "<frozen importlib._bootstrap_external>", line 755, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 892, in get_code
+  File "<frozen importlib._bootstrap_external>", line 950, in get_data
+FileNotFoundError: [Errno 2] No such file or directory: 'F:\\JQKJ\\.harness\\scripts\\start-session.py'
+
+======================================================================
+ERROR: test_creates_worktree_branch_and_registration (tests.test_start_session.TestStartSession.test_creates_worktree_branch_and_registration)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\tests\test_start_session.py", line 70, in test_creates_worktree_branch_and_registration
+    ss = load_script("start-session")
+  File "F:\JQKJ\.harness\tests\test_start_session.py", line 22, in load_script
+    spec.loader.exec_module(mod)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "<frozen importlib._bootstrap_external>", line 755, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 892, in get_code
+  File "<frozen importlib._bootstrap_external>", line 950, in get_data
+FileNotFoundError: [Errno 2] No such file or directory: 'F:\\JQKJ\\.harness\\scripts\\start-session.py'
+
+======================================================================
+ERROR: test_double_active_registration_refused (tests.test_start_session.TestStartSession.test_double_active_registration_refused)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\tests\test_start_session.py", line 86, in test_double_active_registration_refused
+    ss = load_script("start-session")
+  File "F:\JQKJ\.harness\tests\test_start_session.py", line 22, in load_script
+    spec.loader.exec_module(mod)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "<frozen importlib._bootstrap_external>", line 755, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 892, in get_code
+  File "<frozen importlib._bootstrap_external>", line 950, in get_data
+FileNotFoundError: [Errno 2] No such file or directory: 'F:\\JQKJ\\.harness\\scripts\\start-session.py'
+
+======================================================================
+ERROR: test_release_allows_reacquire (tests.test_start_session.TestStartSession.test_release_allows_reacquire)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\tests\test_start_session.py", line 111, in test_release_allows_reacquire
+    ss = load_script("start-session")
+  File "F:\JQKJ\.harness\tests\test_start_session.py", line 22, in load_script
+    spec.loader.exec_module(mod)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "<frozen importlib._bootstrap_external>", line 755, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 892, in get_code
+  File "<frozen importlib._bootstrap_external>", line 950, in get_data
+FileNotFoundError: [Errno 2] No such file or directory: 'F:\\JQKJ\\.harness\\scripts\\start-session.py'
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.002s
+
+FAILED (errors=4)
