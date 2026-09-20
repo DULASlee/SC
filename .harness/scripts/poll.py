@@ -24,6 +24,7 @@ from skills import cap_text, check_skill_evidence  # noqa: E402
 from check_local_scope_compat import glob_to_regex  # noqa: E402
 from dispatch import (  # noqa: E402  复用派发逻辑与卡状态提交，避免重复实现
     load_config, load_card, spawn_attempt, commit_card_status)
+import ownership  # noqa: E402  (TASK-045)
 from replan import plan_retry, sig_of  # noqa: E402  Phase2 重规划与 loop 病理
 from modelswap import (  # noqa: E402
     DEFAULT_SETTINGS, maybe_restore, read_selection, verify_selection)
@@ -33,6 +34,16 @@ ACTIVE_DIR = HARNESS_DIR / "tasks" / "active"
 
 # sig_history 只保留最近 N 条，防无限增长导致 RUNS.jsonl 膨胀。
 SIG_HISTORY_KEEP = 20
+
+
+def _own_release(store, tid: str, reason: str) -> None:
+    """任务离开活动链（pass/blocked/超限）→ 释放 ownership（A3-3：
+    释放后 session 方可更替）。释放失败只 WARN，不干扰回收判定。"""
+    try:
+        ownership.force_release(store.lock_dir, tid, reason)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[WARN] {tid} ownership 释放异常（{reason}）："
+              f"{type(exc).__name__}: {exc}")
 
 # 上游故障指纹（不分大小写）：命中即上游账本，不记病理、不耗预算。
 # 注意：不用裸 "503" 子串（"port 8083" 等端口数字会误命中），只认短语。
@@ -243,7 +254,8 @@ def _settle_upstream(rec: dict, cfg: dict, store: RunsStore,
                      upstream_streak=streak, status="blocked",
                      verdict=verdict, exit_code=code)
         print(f"[WARN] {tid} 上游连续故障达上限（连续 {streak} 次），"
-              f"已标 blocked，等架构师处理")
+              "已标 blocked，等架构师处理")
+        _own_release(store, tid, "upstream-exhausted")
         return
     store.update(tid, attempt, sig_history=hist, upstream_fault=True,
                  upstream_streak=streak)
@@ -264,6 +276,7 @@ def _settle_upstream(rec: dict, cfg: dict, store: RunsStore,
                          exit_code=code, sig_history=hist,
                          upstream_fault=True, upstream_streak=streak)
             print(f"[WARN] {tid} 上游故障重派失败，已标 blocked 交人工：{exc}")
+            _own_release(store, tid, "upstream-respawn-failed")
             return
         store.update(tid, attempt, status="retrying", verdict=verdict,
                      exit_code=code, sig_history=hist, upstream_fault=True,
@@ -281,6 +294,7 @@ def _settle_upstream(rec: dict, cfg: dict, store: RunsStore,
                      exit_code=code, sig_history=hist, upstream_fault=True,
                      upstream_streak=streak)
         print(f"[WARN] {tid} 上游故障但预算耗尽，已标 blocked，等架构师处理")
+        _own_release(store, tid, "upstream-budget-exhausted")
 
 
 def _settle(rec: dict, cfg: dict, store: RunsStore,
@@ -290,7 +304,8 @@ def _settle(rec: dict, cfg: dict, store: RunsStore,
         store.update(tid, attempt, status="awaiting-review",
                      verdict="pass", exit_code=code, upstream_streak=0)
         print(f"[OK] {tid} 通过机器门禁 → awaiting-review，"
-              f"等人类 verify-all.py 验收（poll 不写 done）")
+              "等人类 verify-all.py 验收（poll 不写 done）")
+        _own_release(store, tid, "awaiting-review")
         return
     card_path = ACTIVE_DIR / f"{tid}.yaml"
     tail = tail_stderr(Path(rec["run_dir"]))
@@ -312,6 +327,7 @@ def _settle(rec: dict, cfg: dict, store: RunsStore,
                          exit_code=code, sig_history=hist,
                          model_fallback_hit=hit, upstream_streak=0)
             print(f"[WARN] {tid} {decision.get('reason')}，已标 blocked，等架构师处理")
+            _own_release(store, tid, "blocked-early")
             return
         reset_worktree(Path(rec["worktree"]))
         prefix = decision.get("note_prefix") or ""
@@ -333,6 +349,7 @@ def _settle(rec: dict, cfg: dict, store: RunsStore,
                          exit_code=code, sig_history=hist,
                          model_fallback_hit=hit, upstream_streak=0)
             print(f"[WARN] {tid} 重派失败，已标 blocked 交人工：{exc}")
+            _own_release(store, tid, "respawn-failed")
             return
         store.update(tid, attempt, status="retrying", verdict=verdict,
                      exit_code=code, sig_history=hist,
@@ -343,6 +360,7 @@ def _settle(rec: dict, cfg: dict, store: RunsStore,
         store.update(tid, attempt, status="blocked", verdict=verdict,
                      exit_code=code, sig_history=hist, upstream_streak=0)
         print(f"[WARN] {tid} 超重试上限，已标 blocked，等架构师处理")
+        _own_release(store, tid, "retries-exhausted")
 
 
 def _handle_record(rec: dict, cfg: dict, store: RunsStore) -> None:

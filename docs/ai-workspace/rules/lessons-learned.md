@@ -99,4 +99,5 @@ px skills update 会用实体副本覆盖 Junction，更新后必须复查 LinkT
 - [card-authoring][2026-09-20] `validate-task-card` 强制 acceptance_tests ∈ `tests/` 或 `*.Tests/` → harness Python 卡按 TASK-022/023 先例：填 ArchitectureTests.csproj 形式占位，实质验收（python 测试+红态目录）写进 notes 与 allow_write；不要给此类卡挂 `skills: [test-driven-development]`——证据门禁会拿占位 csproj 比对，必判 fail-skill
 - [git-hygiene][2026-09-21 复盘][自纠] pathspec 提交失败后改用无 pathspec 提交，把前会话遗留的两个已暂存"A"文件一并带入（TASK-024 教训第三次变体复现）→ 无 pathspec 提交前必须逐行核对 `git status --porcelain` 首列（A/M/D 皆为暂存面），新文件先 `git add` 再带 pathspec 提交
 - [retire-scope][2026-09-21] 写"退役旧链"类施工卡前，先 rg 全仓找**断言旧架构的既有测试**：断言方（如 test_gates）必须进同一卡 allow_write，否则只能死代码过渡（运行时目标达成、物理删除挂 FOLLOW-UP）——删除函数 = 改测试语义，铁律 4（禁删测试掩盖）+ 卡片 scope 双重红线
+- [single-source][2026-09-21] 前一阶段为"先跑通"登记的簿（sessions/），在后续阶段确立唯一事实源（ownership/）时必须**吸收**：旧路径删除、所有读方、旧卡测试三份全部进同一卡 allow——并行留两处 = §7.1 双事实源违例；卡片起草时漏列迁移测试，提交当场变越权（补列后透明提交）
 

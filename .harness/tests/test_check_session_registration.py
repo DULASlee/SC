@@ -1,54 +1,33 @@
-"""TASK-042 red tests: worktree commit registration gate (hook engine)."""
+"""TASK-042/045: worktree commit ownership gate (hook engine) tests.
+
+Fixture roots get a copy of the real scripts dir so the hook's
+git-common-dir-anchored import of ownership.py resolves (same layout as
+a merged main tree)."""
 import importlib.util
 import json
+import shutil
 import subprocess
+import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[2]
+SCRIPTS = ROOT / ".harness" / "scripts"
 
 
 def git(*args, cwd):
-    return subprocess.run(["git", *args], cwd=str(cwd),
-                          capture_output=True, text=True,
-                          encoding="utf-8", errors="replace")
+    return subprocess.run(["git", *args], cwd=str(cwd), capture_output=True,
+                          text=True, encoding="utf-8", errors="replace")
 
 
-def load_script(name):
-    # hook engine lives in the single-source hooks dir (AGENTS rule 6,
-    # same convention as check_approval.py)
+def load_hook():
+    p = ROOT / "docs" / "ai-workspace" / "hooks" / "check_session_registration.py"
     spec = importlib.util.spec_from_file_location(
-        name, ROOT / "docs" / "ai-workspace" / "hooks" / f"{name}.py")
+        "check_session_registration", p)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
-
-
-CARD = """id: TASK-901
-title: "fixture card"
-status: ready
-created: 2026-09-20T00:00:00Z
-created_by: architect
-scope:
-  allow_write:
-    - mod/**
-  deny_write:
-    - .harness/**
-acceptance_tests:
-  - tests/x.cs
-done_when:
-  - "ci: build"
-"""
-
-CFG = """model: test-model
-executor_argv: ['python', '-c', 'print(1)', '{prompt}']
-concurrency: 3
-max_retries: 3
-max_tasks_per_run: 10
-worktree_root: .harness/worktrees
-runs_dir: .harness/runs
-"""
 
 
 def make_repo(tmp):
@@ -56,93 +35,95 @@ def make_repo(tmp):
     git("init", cwd=root)
     git("config", "user.email", "t@t", cwd=root)
     git("config", "user.name", "t", cwd=root)
-    (root / ".harness" / "tasks" / "active").mkdir(parents=True)
-    (root / ".harness" / "tasks" / "active" / "TASK-901.yaml").write_text(
-        CARD, encoding="utf-8")
-    (root / ".harness" / "dispatch.yaml").write_text(CFG, encoding="utf-8")
-    (root / "mod").mkdir()
-    (root / "mod" / "a.txt").write_text("a", encoding="utf-8")
+    (root / ".harness" / "scripts").mkdir(parents=True)
+    shutil.copytree(SCRIPTS, root / ".harness" / "scripts", dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns("__pycache__"))
+    (root / "a.txt").write_text("a", encoding="utf-8")
     git("add", "-A", cwd=root)
     git("commit", "-m", "init", cwd=root)
     return root
 
 
-class TestCheckRegistration(unittest.TestCase):
-    def _engine(self):
-        return load_script("check_session_registration")
+def make_worktree(root, name):
+    wt = root / ".harness" / "worktrees" / name
+    wt.mkdir(parents=True)
+    r = git("worktree", "add", "-B", f"feat/{name}", str(wt), cwd=root)
+    assert r.returncode == 0, r.stderr
+    return wt
 
+
+def write_claim(root, task, session, wt):
+    d = root / ".harness" / "runs" / "ownership"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / f"{task}.json").write_text(json.dumps({
+        "task_id": task, "owner_session_id": session,
+        "owner_worktree": str(Path(wt).resolve()).replace("\\", "/"),
+        "state": "claimed"}), encoding="utf-8")
+
+
+class TestOwnershipGate(unittest.TestCase):
     def test_main_tree_always_passes(self):
-        eng = self._engine()
+        eng = load_hook()
         with TemporaryDirectory() as tmp:
             root = make_repo(tmp)
-            ok, msg = eng.check(Path(root), Path(root),
-                                Path(root) / ".harness" / "runs" / "sessions")
+            ok, msg = eng.check(root, root, root / ".harness" / "runs")
             self.assertTrue(ok, msg)
 
-    def test_unregistered_worktree_fails(self):
-        eng = self._engine()
+    def test_unclaimed_worktree_fails(self):
+        eng = load_hook()
         with TemporaryDirectory() as tmp:
             root = make_repo(tmp)
-            wt = Path(root) / ".harness" / "worktrees" / "TASK-901"
-            wt.mkdir(parents=True)
-            git("worktree", "add", "-B", "feat/TASK-901", str(wt), cwd=root)
-            sessions = Path(root) / ".harness" / "runs" / "sessions"
-            ok, msg = eng.check(wt.resolve(), Path(root).resolve(), sessions)
+            wt = make_worktree(root, "TASK-901")
+            ok, msg = eng.check(wt, root, root / ".harness" / "runs")
             self.assertFalse(ok)
-            self.assertIn("registration", msg)
+            self.assertIn("ownership", msg)
 
-    def test_active_registration_passes(self):
-        eng = self._engine()
+    def test_claimed_worktree_passes(self):
+        eng = load_hook()
         with TemporaryDirectory() as tmp:
             root = make_repo(tmp)
-            wt = Path(root) / ".harness" / "worktrees" / "TASK-901"
-            wt.mkdir(parents=True)
-            git("worktree", "add", "-B", "feat/TASK-901", str(wt), cwd=root)
-            sessions = Path(root) / ".harness" / "runs" / "sessions"
-            sessions.mkdir(parents=True)
-            reg = {"task_id": "TASK-901",
-                   "worktree": str(wt.resolve()).replace("\\", "/"),
-                   "branch": "feat/TASK-901", "session_id": "TASK-901.1",
-                   "owner": "t", "status": "active"}
-            (sessions / "TASK-901.json").write_text(
-                json.dumps(reg), encoding="utf-8")
-            ok, msg = eng.check(wt.resolve(), Path(root).resolve(), sessions)
+            wt = make_worktree(root, "TASK-901")
+            write_claim(root, "TASK-901", "manual:t", wt)
+            ok, msg = eng.check(wt, root, root / ".harness" / "runs")
             self.assertTrue(ok, msg)
 
-    def test_released_registration_fails(self):
-        eng = self._engine()
+    def test_other_worktrees_claim_does_not_leak(self):
+        """V5/V6 单元面：别的 worktree 有主 ≠ 本 worktree 有主。"""
+        eng = load_hook()
         with TemporaryDirectory() as tmp:
             root = make_repo(tmp)
-            wt = Path(root) / ".harness" / "worktrees" / "TASK-901"
-            wt.mkdir(parents=True)
-            git("worktree", "add", "-B", "feat/TASK-901", str(wt), cwd=root)
-            sessions = Path(root) / ".harness" / "runs" / "sessions"
-            sessions.mkdir(parents=True)
-            reg = {"task_id": "TASK-901",
-                   "worktree": str(wt.resolve()).replace("\\", "/"),
-                   "branch": "feat/TASK-901", "session_id": "TASK-901.1",
-                   "owner": "t", "status": "released"}
-            (sessions / "TASK-901.json").write_text(
-                json.dumps(reg), encoding="utf-8")
-            ok, _ = eng.check(wt.resolve(), Path(root).resolve(), sessions)
+            wtA = make_worktree(root, "TA")
+            wtB = make_worktree(root, "TB")
+            write_claim(root, "TA", "manual:a", wtA)
+            ok, _ = eng.check(wtB, root, root / ".harness" / "runs")
             self.assertFalse(ok)
 
-    def test_path_normalization_windows_case(self):
-        eng = self._engine()
+    def test_released_claim_gates_again(self):
+        eng = load_hook()
         with TemporaryDirectory() as tmp:
             root = make_repo(tmp)
-            wt = Path(root) / ".harness" / "worktrees" / "TASK-901"
-            wt.mkdir(parents=True)
-            git("worktree", "add", "-B", "feat/TASK-901", str(wt), cwd=root)
-            sessions = Path(root) / ".harness" / "runs" / "sessions"
-            sessions.mkdir(parents=True)
-            upper = str(wt.resolve()).replace("\\", "/").upper()
-            reg = {"task_id": "TASK-901", "worktree": upper,
-                   "branch": "feat/TASK-901", "session_id": "TASK-901.1",
-                   "owner": "t", "status": "active"}
-            (sessions / "TASK-901.json").write_text(
-                json.dumps(reg), encoding="utf-8")
-            ok, msg = eng.check(wt.resolve(), Path(root).resolve(), sessions)
+            wt = make_worktree(root, "TASK-901")
+            write_claim(root, "TASK-901", "manual:t", wt)
+            f = root / ".harness" / "runs" / "ownership" / "TASK-901.json"
+            data = json.loads(f.read_text(encoding="utf-8"))
+            data["state"] = "released"
+            f.write_text(json.dumps(data), encoding="utf-8")
+            ok, _ = eng.check(wt, root, root / ".harness" / "runs")
+            self.assertFalse(ok)
+
+    def test_path_case_normalization(self):
+        eng = load_hook()
+        with TemporaryDirectory() as tmp:
+            root = make_repo(tmp)
+            wt = make_worktree(root, "TASK-901")
+            d = root / ".harness" / "runs" / "ownership"
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "TASK-901.json").write_text(json.dumps({
+                "task_id": "TASK-901", "owner_session_id": "manual:t",
+                "owner_worktree": str(Path(wt).resolve())
+                .replace("\\", "/").upper(),
+                "state": "claimed"}), encoding="utf-8")
+            ok, msg = eng.check(wt, root, root / ".harness" / "runs")
             self.assertTrue(ok, msg)
 
 

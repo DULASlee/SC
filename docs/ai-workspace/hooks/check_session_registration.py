@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
-"""L0 worktree commit registration gate (TASK-042, v1.1 A4).
+"""L0/L2 worktree commit gate (TASK-042 -> TASK-045), ASCII output only.
 
-Invoked from pre-commit. Output is ASCII only (AGENTS rule 4).
+Rules (ownership = single authority, <runs>/ownership/):
+- main-tree commit                  -> pass (human/dispatcher flow intact)
+- worktree commit, claimed by a
+  session bound to this worktree    -> pass
+- otherwise                         -> FAIL (claim first: start-session.py)
 
-Rules:
-- main-tree commit            -> pass (unchanged human/dispatcher flow)
-- worktree commit, active     -> pass   (registered + same worktree)
-- worktree commit, none/      -> FAIL   ("must run start-session.py first";
-  released/stale-mismatch        this is the mechanism side of
-                                 "no manual session bypasses L0")
-
-Main tree is located via git-common-dir anchor (worktree-safe; P0 map
-defect B: __file__/toplevel resolution reads a branch snapshot otherwise).
+Main tree located via git-common-dir anchor (worktree-safe). Physical
+worktree/branch isolation lives in start-session.py; this gate enforces
+"execute: Owner only" at commit time (§7.1). No bypass by design.
 """
 from __future__ import annotations
 
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -33,29 +30,19 @@ def norm(p) -> str:
     return str(Path(p).resolve()).replace("\\", "/").casefold()
 
 
-def check(toplevel: Path, main_root: Path, sessions_dir: Path):
-    """(ok, message). Pure logic, unit-tested."""
+def check(toplevel: Path, main_root: Path, runs_dir: Path):
+    """(ok, message). Pure logic, unit-tested. reads ownership registry."""
     if norm(toplevel) == norm(main_root):
-        return True, "[OK] main-tree commit, registration check skipped"
-    if not Path(sessions_dir).is_dir():
-        return False, ("[FAIL] worktree commit without active session "
-                       "registration (no sessions dir): run "
-                       ".harness/scripts/start-session.py TASK-XXX first")
-    want = norm(toplevel)
-    for f in sorted(Path(sessions_dir).glob("*.json")):
-        try:
-            reg = json.loads(f.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if reg.get("status") != "active":
-            continue
-        if norm(reg.get("worktree", "")) == want:
-            return True, ("[OK] session registration active: task=%s "
-                          "owner=%s" % (reg.get("task_id"),
-                                        reg.get("owner")))
-    return False, ("[FAIL] worktree commit without active session "
-                   "registration: run .harness/scripts/start-session.py "
-                   "TASK-XXX first")
+        return True, "[OK] main-tree commit, ownership check skipped"
+    sys.path.insert(0, str(Path(main_root) / ".harness" / "scripts"))
+    import ownership
+    rec = ownership.worktree_owner(runs_dir, toplevel)
+    if rec:
+        return True, ("[OK] ownership claimed: task=%s session=%s"
+                      % (rec.get("task_id"), rec.get("owner_session_id")))
+    return False, ("[FAIL] worktree commit without active ownership claim"
+                   " (no session bound to this worktree): run"
+                   " .harness/scripts/start-session.py TASK-XXX first")
 
 
 def main() -> int:
@@ -63,11 +50,10 @@ def main() -> int:
         top = Path(git("rev-parse", "--show-toplevel"))
         common = Path(git("rev-parse", "--git-common-dir"))
         main_root = common.resolve().parent
-        # main-tree runs_dir convention (coordination root = repo level, A5)
-        sessions = main_root / ".harness" / "runs" / "sessions"
-        ok, msg = check(top, main_root, sessions)
-    except Exception as exc:  # noqa: BLE001  hook must fail closed, loudly
-        print(f"[FAIL] registration gate error (fail closed): {exc}")
+        runs_dir = main_root / ".harness" / "runs"
+        ok, msg = check(top, main_root, runs_dir)
+    except Exception as exc:  # noqa: BLE001  fail closed, loudly
+        print(f"[FAIL] ownership gate error (fail closed): {exc}")
         return 1
     print(msg)
     return 0 if ok else 1

@@ -22,6 +22,7 @@ import yaml
 HARNESS_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = HARNESS_DIR.parent
 sys.path.insert(0, str(HARNESS_DIR / "scripts"))
+import ownership  # noqa: E402  (TASK-045)
 from runs import RunsStore  # noqa: E402  (同目录库导入)
 from skills import cap_text, load_skill_texts  # noqa: E402
 from modelswap import (  # noqa: E402
@@ -443,6 +444,20 @@ def main() -> int:
             except Exception as exc:  # noqa: BLE001  占坑失败已内部回滚，跳过本卡
                 print(f"[FAIL] {tid} 占坑失败，跳过：{exc}")
                 continue
+            # TASK-045：commit 之后记 ownership（§13 序）；已有主=拒绝并回滚卡
+            own_sid = f"dispatch:{tid}"
+            try:
+                ownership.claim(
+                    runs_dir, tid, own_sid,
+                    str(REPO_ROOT / cfg["worktree_root"] / tid))
+            except ownership.OwnershipConflict as exc:
+                print(f"[SKIP] {tid} 已有主，拒绝双目录执行：{exc}")
+                try:
+                    commit_card_status(card_path, tid, "ready",
+                                       "ownership 冲突回滚")
+                except Exception as exc2:  # noqa: BLE001
+                    print(f"[WARN] {tid} 回滚到 ready 失败，需人工处理：{exc2}")
+                continue
             touch(runs_dir)  # claim 含 git 提交（慢），刷心跳再派发
             try:
                 spawn_attempt(tid, live, cfg, store, None)
@@ -452,6 +467,7 @@ def main() -> int:
                 try:
                     commit_card_status(card_path, tid, "ready",
                                        "派发失败回滚")
+                    ownership.force_release(runs_dir, tid, "spawn-failed")
                 except Exception as exc2:  # noqa: BLE001
                     print(f"[WARN] {tid} 回滚到 ready 失败，需人工处理：{exc2}")
         finally:

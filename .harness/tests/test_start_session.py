@@ -66,15 +66,15 @@ def make_repo(tmp):
 
 
 class TestStartSession(unittest.TestCase):
-    def test_creates_worktree_branch_and_registration(self):
+    def test_creates_worktree_branch_and_ownership_claim(self):
         ss = load_script("start-session")
         with TemporaryDirectory() as tmp:
             root = make_repo(tmp)
             reg = ss.create_session(root, "TASK-901", owner="tester",
-                                    with_context=False)
-            self.assertTrue(Path(reg["worktree"]).is_dir())
-            self.assertEqual(reg["branch"], "feat/TASK-901")
-            self.assertEqual(reg["status"], "active")
+                                    with_context=False, claim_card=False)
+            self.assertTrue(Path(reg["owner_worktree"]).is_dir())
+            self.assertEqual(reg["state"], "claimed")
+            self.assertEqual(reg["owner_session_id"], "manual:tester")
             r = git("branch", "--list", "feat/TASK-901", cwd=root)
             self.assertIn("feat/TASK-901", r.stdout)
             path = Path(reg["registration_file"])
@@ -87,10 +87,10 @@ class TestStartSession(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = make_repo(tmp)
             ss.create_session(root, "TASK-901", owner="a",
-                              with_context=False)
+                              with_context=False, claim_card=False)
             with self.assertRaises(RuntimeError) as ctx:
                 ss.create_session(root, "TASK-901", owner="b",
-                                  with_context=False)
+                                  with_context=False, claim_card=False)
             self.assertIn("already", str(ctx.exception).lower())
 
     def test_card_in_progress_refused(self):
@@ -105,19 +105,31 @@ class TestStartSession(unittest.TestCase):
             git("commit", "-m", "claim", cwd=root)
             with self.assertRaises(RuntimeError):
                 ss.create_session(root, "TASK-901", owner="a",
-                                  with_context=False)
+                                  with_context=False, claim_card=False)
+
+    def test_same_session_reclaim_is_idempotent(self):
+        """A3-2：同任务重试链复用同一 owner session（幂等刷新）。"""
+        ss = load_script("start-session")
+        with TemporaryDirectory() as tmp:
+            root = make_repo(tmp)
+            r1 = ss.create_session(root, "TASK-901", owner="a",
+                                   with_context=False, claim_card=False)
+            r2 = ss.create_session(root, "TASK-901", owner="a",
+                                   with_context=False, claim_card=False)
+            self.assertEqual(r1["owner_session_id"], r2["owner_session_id"])
 
     def test_release_allows_reacquire(self):
         ss = load_script("start-session")
         with TemporaryDirectory() as tmp:
             root = make_repo(tmp)
             reg = ss.create_session(root, "TASK-901", owner="a",
-                                    with_context=False)
-            ss.release_session(root, "TASK-901")
+                                    with_context=False, claim_card=False)
+            ss.release_session(root, "TASK-901", owner="a")
             reg2 = ss.create_session(root, "TASK-901", owner="b",
-                                     with_context=False)
-            self.assertEqual(reg2["owner"], "b")
-            self.assertEqual(Path(reg2["worktree"]), Path(reg["worktree"]))
+                                     with_context=False, claim_card=False)
+            self.assertEqual(reg2["owner_session_id"], "manual:b")
+            self.assertEqual(Path(reg2["owner_worktree"]),
+                             Path(reg["owner_worktree"]))
 
 
 if __name__ == "__main__":

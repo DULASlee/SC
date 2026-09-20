@@ -30,6 +30,7 @@ from dispatch import (  # noqa: E402
     _dsh_settings_path,
 )
 from modelswap import build_session_override, split_model  # noqa: E402
+import ownership  # noqa: E402  (TASK-045)
 from dispatch import spawn_attempt as dispatch_spawn_attempt  # noqa: E402
 import poll as poll_mod  # noqa: E402
 
@@ -214,6 +215,12 @@ def _run(cmd: list[str], cwd: Path) -> tuple[int, str, str]:
 def spawn_stage(task_id: str, card: dict, cfg: dict, store: RunsStore,
                 stage: str, failure_note: str | None = None) -> int:
     """通用 headless 派发：cwd 为任务 worktree，run_dir 为 pipe 目录。"""
+    # TASK-045：管线领取记 ownership（session=pipeline:<tid>，同任务各阶段
+    # 幂等复用；已有其他主 → 抛错，advance 的 per-card 隔离会把它变成可见 [FAIL]）
+    ownership.claim(
+        (REPO_ROOT / cfg["runs_dir"]).resolve(), task_id,
+        f"pipeline:{task_id}",
+        str((REPO_ROOT / cfg["worktree_root"] / task_id).resolve()))
     if stage in ("execute", "check"):
         eff_card = dict(card)
         if not eff_card.get("skills"):
@@ -511,6 +518,20 @@ def _reap_running(rec: dict, card: dict, cfg: dict, store: RunsStore):
 
 
 def advance(task_id: str, card: dict, cfg: dict, store: RunsStore):
+    """单步推进 + 终态释放归属（TASK-045）。"""
+    result = _advance_inner(task_id, card, cfg, store)
+    kind = result[0] if isinstance(result, tuple) else result
+    if kind in ("blocked", "done"):
+        try:
+            ownership.force_release(
+                (REPO_ROOT / cfg["runs_dir"]).resolve(),
+                task_id, f"pipeline-{kind}")
+        except Exception as exc:  # noqa: BLE001  释放失败不吞推进结果
+            print(f"[WARN] {task_id} ownership 释放异常：{exc}", flush=True)
+    return result
+
+
+def _advance_inner(task_id: str, card: dict, cfg: dict, store: RunsStore):
     last = last_record(store, task_id)
     if last is None:
         spawn_stage(task_id, card, cfg, store, STAGES[0])
