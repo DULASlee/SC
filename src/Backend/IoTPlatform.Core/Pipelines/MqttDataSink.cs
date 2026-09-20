@@ -43,7 +43,9 @@ public sealed class MqttDataSink : IDataSink
             .WithCleanSession(true)
             .WithKeepAlivePeriod(TimeSpan.FromSeconds(60));
         if (!string.IsNullOrEmpty(username))
+        {
             builder = builder.WithCredentials(username, password);
+        }
         _options = builder.Build();
     }
 
@@ -71,7 +73,9 @@ public sealed class MqttDataSink : IDataSink
     public async Task PublishAsync(string topic, SampleData data, CancellationToken ct = default)
     {
         if (_client is null || !_client.IsConnected)
+        {
             throw new InvalidOperationException("MQTT client not connected");
+        }
 
         var payload = SerializeToJson(data);
         var msg = new MqttApplicationMessageBuilder()
@@ -84,7 +88,10 @@ public sealed class MqttDataSink : IDataSink
 
     public async Task PublishBatchAsync(string topic, IEnumerable<SampleData> data, CancellationToken ct = default)
     {
-        foreach (var d in data) await PublishAsync(topic, d, ct).ConfigureAwait(false);
+        foreach (var d in data)
+        {
+            await PublishAsync(topic, d, ct).ConfigureAwait(false);
+        }
     }
 
     /// <summary>序列化为 IoTPlatform 标准 JSON。</summary>
@@ -102,11 +109,21 @@ public sealed class MqttDataSink : IDataSink
 
     public async ValueTask DisposeAsync()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
         _disposed = true;
         if (_client is not null)
         {
-            try { await _client.DisconnectAsync().ConfigureAwait(false); } catch { /* ignore */ }
+            try
+            {
+                await _client.DisconnectAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+                /* ignore */
+            }
             _client.Dispose();
         }
     }

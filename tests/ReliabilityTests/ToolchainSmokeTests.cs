@@ -23,11 +23,11 @@ public class ToolchainSmokeTests
     [Fact]
     public void MosquittoBuilder_TypeIsLoadable_AndAssemblyResolves()
     {
-        var type = typeof(MosquittoBuilder);
+        Type type = typeof(MosquittoBuilder);
         type.Assembly.GetName().Name.Should().Be("Testcontainers.Mosquitto");
 
         // 4.x: 构造器必须存在（即使无参构造器 obsolete，存在性是烟雾验证目标）
-        var ctors = type.GetConstructors();
+        ConstructorInfo[] ctors = type.GetConstructors();
         ctors.Should().NotBeEmpty("MosquittoBuilder 必须有至少 1 个构造器");
 
         // 4.x: 至少 1 个构造器接受 string 参数（image 参数）
@@ -42,7 +42,7 @@ public class ToolchainSmokeTests
         // 因为本机没 Docker，不会真的拉镜像；CI 阶段会拉镜像并失败。
         // 本地仅验证类型/构造器能接受任意 string（构造器阶段不报错）。
         // 真正的"tag 不存在则拉镜像失败"会在 CI 启动阶段由 Docker daemon 抛出。
-        var builder = new MosquittoBuilder("definitely-does-not-exist-999999999:latest");
+        MosquittoBuilder builder = new MosquittoBuilder("definitely-does-not-exist-999999999:latest");
         builder.Should().NotBeNull("构造器仅校验 string 参数类型，不校验镜像是否存在");
 
         // 注：实际镜像拉取失败由 InitializeAsync().StartAsync() 在调用方触发，
@@ -52,10 +52,10 @@ public class ToolchainSmokeTests
     [Fact]
     public void ToxiproxyBuilder_TypeIsLoadable_AndAssemblyResolves()
     {
-        var type = typeof(ToxiproxyBuilder);
+        Type type = typeof(ToxiproxyBuilder);
         type.Assembly.GetName().Name.Should().Be("Testcontainers.Toxiproxy");
 
-        var ctors = type.GetConstructors();
+        ConstructorInfo[] ctors = type.GetConstructors();
         ctors.Should().NotBeEmpty("ToxiproxyBuilder 必须有至少 1 个构造器");
         ctors.Any(c => c.GetParameters().Any(p => p.ParameterType == typeof(string)))
             .Should().BeTrue("4.x 要求 ToxiproxyBuilder(string image) 构造器");
@@ -73,5 +73,3 @@ public class ToolchainSmokeTests
         actual.Should().HaveLength(expected.Length);
     }
 }
-
-

@@ -1,0 +1,43 @@
+id: TASK-013
+title: "治理收尾：governance.md + hooks wrapper 冒烟 + CI paths filter"
+status: ready
+approver: architect
+created: 2026-09-18T00:00:00Z
+created_by: architect
+scope:
+  allow_write:
+    - .harness/rules/governance.md
+    - .githooks/**
+    - .github/workflows/ci.yml
+    - .harness/tasks/active/TASK-013.yaml
+    # TASK-017: 铁律 12 强制每卡追加经验，allow 必须覆盖经验库
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - docs/ai-workspace/rules/engineering-rules.mdc
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+notes: |
+  ## 子任务 1：governance.md
+  创建 .harness/rules/governance.md，内容：
+  - 5 条规则：
+    1. 任务卡生命周期：ready → in_progress → done → archived，状态变更必须 commit
+    2. scope 强制：allow_write 外的文件修改会被 pre-commit hook 拦截
+    3. 铁律不可绕过：任何 commit 不得违反现行铁律，豁免需项目负责人书面授权并记录
+    4. 经验沉淀触发：每个 done 任务必须在 lessons-learned.md 追加至少 1 条经验
+    5. 豁免记录格式：豁免必须记录规则编号、原因、授权人、日期、过期条件
+  - 豁免记录表（含 TASK-008 铁律 13 豁免：一次性豁免，已过期，原因"经验沉淀机制尚未就位"）
+
+  ## 子任务 2：hooks wrapper 冒烟
+  - 确认 .githooks/pre-push 和 .githooks/commit-msg 是 wrapper 脚本
+  - wrapper 内容应委托给 docs/ai-workspace/hooks/ 下的实际实现
+  - 冒烟测试：直接调用 wrapper 验证 hook 被调用
+  - 验证通过后恢复
+
+  ## 子任务 3：CI paths filter
+  - .github/workflows/ci.yml 加 paths: 过滤：
+    - 触发 build 的路径：src/**, tests/**, Directory.Build.props, .editorconfig, *.csproj
+    - 不触发 build 的路径：docs/**, .harness/**, .specstory/**, README.md
+  - 目的：文档变更不浪费 CI 资源

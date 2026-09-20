@@ -33,8 +33,21 @@ public abstract class BaseCollector : ICollector
 
     public CollectorStatus Status
     {
-        get { lock (_statusLock) return _status; }
-        private set { lock (_statusLock) _status = value; }
+        get
+        {
+            lock (_statusLock)
+            {
+                return _status;
+            }
+        }
+
+        private set
+        {
+            lock (_statusLock)
+            {
+                _status = value;
+            }
+        }
     }
 
     public event EventHandler<CollectorStatusChangedEventArgs>? StatusChanged;
@@ -44,7 +57,9 @@ public abstract class BaseCollector : ICollector
     protected BaseCollector(string deviceId, ILogger? logger = null)
     {
         if (string.IsNullOrWhiteSpace(deviceId))
+        {
             throw new ArgumentException("DeviceId cannot be empty", nameof(deviceId));
+        }
         DeviceId = deviceId;
         Logger = logger ?? NullLogger.Instance;
     }
@@ -68,13 +83,20 @@ public abstract class BaseCollector : ICollector
         try
         {
             if (Adapter is null)
+            {
                 Adapter = await BuildAdapterAsync(ct).ConfigureAwait(false);
+            }
+
             if (DataSink is null)
+            {
                 DataSink = await BuildDataSinkAsync(ct).ConfigureAwait(false);
+            }
 
             var ready = await DataSink.InitializeAsync(ct).ConfigureAwait(false);
             if (!ready)
+            {
                 throw new InvalidOperationException($"DataSink {DataSink.Name} failed to initialize");
+            }
 
             _loopCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             _loopTask = RunLoopAsync(_loopCts.Token);
@@ -94,14 +116,23 @@ public abstract class BaseCollector : ICollector
 
     public async Task StopAsync(CancellationToken ct = default)
     {
-        if (Status == CollectorStatus.Stopped || Status == CollectorStatus.Stopping) return;
+        if (Status == CollectorStatus.Stopped || Status == CollectorStatus.Stopping)
+        {
+            return;
+        }
 
         SetStatus(CollectorStatus.Stopping, "Stopping");
         _loopCts?.Cancel();
         if (_loopTask is not null)
         {
-            try { await _loopTask.ConfigureAwait(false); }
-            catch (OperationCanceledException) { /* expected */ }
+            try
+            {
+                await _loopTask.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                /* expected */
+            }
         }
         await DisposeAdapterAndSinkAsync().ConfigureAwait(false);
         SetStatus(CollectorStatus.Stopped, "Stopped");
@@ -110,7 +141,10 @@ public abstract class BaseCollector : ICollector
 
     public async Task<IReadOnlyList<TagReadResult>> SampleOnceAsync(CancellationToken ct = default)
     {
-        if (Adapter is null) throw new InvalidOperationException("Adapter not initialized");
+        if (Adapter is null)
+        {
+            throw new InvalidOperationException("Adapter not initialized");
+        }
         var tags = DefineTags();
         var sw = Stopwatch.StartNew();
         var results = await Adapter.ReadTagsAsync(tags, ct).ConfigureAwait(false);
@@ -144,6 +178,7 @@ public abstract class BaseCollector : ICollector
                         backoff = TimeSpan.FromTicks(Math.Min(backoff.Ticks * 2, maxBackoff.Ticks));
                         continue;
                     }
+
                     backoff = TimeSpan.FromSeconds(1);
                 }
 
@@ -158,7 +193,9 @@ public abstract class BaseCollector : ICollector
                     {
                         await DataSink.PublishAsync(topic, sample, ct).ConfigureAwait(false);
                         if (Status == CollectorStatus.Degraded)
+                        {
                             SetStatus(CollectorStatus.Running, "Sink recovered");
+                        }
                     }
                     catch (Exception sinkEx)
                     {
@@ -169,14 +206,23 @@ public abstract class BaseCollector : ICollector
 
                 await Task.Delay(SampleInterval, ct).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) { break; }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Loop error in {DeviceId}", DeviceId);
                 SetStatus(CollectorStatus.Error, ex.Message);
                 OnError(ex, "RunLoopAsync");
-                try { await Task.Delay(backoff, ct).ConfigureAwait(false); }
-                catch (OperationCanceledException) { break; }
+                try
+                {
+                    await Task.Delay(backoff, ct).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
             }
         }
     }
@@ -222,13 +268,26 @@ public abstract class BaseCollector : ICollector
     {
         if (Adapter is not null)
         {
-            try { await Adapter.DisposeAsync().ConfigureAwait(false); }
-            catch (Exception ex) { Logger.LogWarning(ex, "Adapter dispose error"); }
+            try
+            {
+                await Adapter.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Adapter dispose error");
+            }
         }
+
         if (DataSink is not null)
         {
-            try { await DataSink.DisposeAsync().ConfigureAwait(false); }
-            catch (Exception ex) { Logger.LogWarning(ex, "DataSink dispose error"); }
+            try
+            {
+                await DataSink.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "DataSink dispose error");
+            }
         }
     }
 

@@ -38,7 +38,10 @@ public sealed class JsonDataSink : IDataSink
         try
         {
             var dir = Path.GetDirectoryName(_filePath);
-            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+            if (!string.IsNullOrEmpty(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
             var stream = new FileStream(_filePath, FileMode.Append, FileAccess.Write, FileShare.Read);
             _writer = new StreamWriter(stream, new UTF8Encoding(false)) { AutoFlush = true };
             Logger.LogInformation("JsonDataSink writing to {File}", _filePath);
@@ -53,7 +56,10 @@ public sealed class JsonDataSink : IDataSink
 
     public Task PublishAsync(string topic, SampleData data, CancellationToken ct = default)
     {
-        if (_writer is null) throw new InvalidOperationException("Sink not initialized");
+        if (_writer is null)
+        {
+            throw new InvalidOperationException("Sink not initialized");
+        }
         var json = JsonSerializer.Serialize(new
         {
             topic,
@@ -72,14 +78,25 @@ public sealed class JsonDataSink : IDataSink
 
     public async Task PublishBatchAsync(string topic, IEnumerable<SampleData> data, CancellationToken ct = default)
     {
-        foreach (var d in data) await PublishAsync(topic, d, ct).ConfigureAwait(false);
+        foreach (var d in data)
+        {
+            await PublishAsync(topic, d, ct).ConfigureAwait(false);
+        }
     }
 
     public ValueTask DisposeAsync()
     {
-        if (_disposed) return ValueTask.CompletedTask;
+        if (_disposed)
+        {
+            return ValueTask.CompletedTask;
+        }
         _disposed = true;
-        if (_writer is not null) { _writer.Flush(); _writer.Dispose(); _writer = null; }
+        if (_writer is not null)
+        {
+            _writer.Flush();
+            _writer.Dispose();
+            _writer = null;
+        }
         return ValueTask.CompletedTask;
     }
 }

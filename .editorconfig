@@ -1,6 +1,14 @@
 # L0 harness · 文件编码 + 行尾 + 缩进。
 # 故意不含 csharp_style_* 全套规则 —— 现有代码会大面积违反，会把 L0 拖成 3 小时。
 # csharp_style_* 留给 L2 渐进迁移。
+#
+# L2-A 收尾 (TASK-012): Roslynator 白名单 ≤15 条规则，分三类:
+# - 格式 (RCS0001-RCS0030): 换行/空格/文件尾
+# - 简化 (RCS1000-RCS1099): expression-body, var, remove-unnecessary-braces
+# - unused (RCS1213 等): 未使用变量/参数
+# 全部 severity=warning (因 TreatWarningsAsErrors=true = error)。
+# 试点: tests/ReliabilityTests (白名单生效验证)。
+# 全仓警告分类报告: 收集现有代码在白名单下的所有 RCS 警告, 记录到 TASK-012.yaml notes。
 
 root = true
 
@@ -21,3 +29,48 @@ end_of_line = lf
 [*.ini]
 charset = utf-8
 end_of_line = crlf
+
+# ===========================================
+# Roslynator 4.12.9 白名单 (TASK-012 + TASK-014)
+# TASK-012: 试点工程 (ReliabilityTests + IoTPlatform.Core)
+# TASK-014: 全仓推广 (除 ArchitectureTests + LnkCollector_src + IoTPlatform.Core.Tests 空 csproj)
+# ===========================================
+[src/**/*.cs]
+[tests/**/*.cs]
+# --- 格式 (5 条) ---
+dotnet_diagnostic.RCS0023.severity = warning   # Blank line required between block statements and following statements
+dotnet_diagnostic.RCS0024.severity = warning   # Put constructor in a single line, or on multiple lines
+dotnet_diagnostic.RCS0025.severity = warning   # Use blank line after access modifier
+dotnet_diagnostic.RCS0026.severity = warning   # Enable nullable reference types
+dotnet_diagnostic.RCS0027.severity = warning   # Remove blank line after initializer
+# --- 简化 (5 条) ---
+dotnet_diagnostic.RCS1264.severity = warning   # Use explicit type instead of 'var' when type is not obvious (was RCS1008, deprecated)
+dotnet_diagnostic.RCS1018.severity = warning   # Add accessibility modifier
+dotnet_diagnostic.RCS1021.severity = warning   # Convert lambda to method group
+dotnet_diagnostic.RCS1036.severity = warning   # Remove unnecessary blank line
+dotnet_diagnostic.RCS1039.severity = warning   # Remove unnecessary parenthesis
+# --- unused (3 条) ---
+dotnet_diagnostic.RCS1004.severity = none       # Remove unnecessary cast (禁用: 与 RCS1007 braces 冲突)
+dotnet_diagnostic.RCS1007.severity = warning   # Add braces
+dotnet_diagnostic.RCS1213.severity = warning   # Unused assignment
+# --- 其他 (2 条) ---
+dotnet_diagnostic.RCS1033.severity = warning   # Remove unnecessary 'using' directive
+dotnet_diagnostic.RCS1037.severity = warning   # Remove unnecessary empty constructor
+
+# 默认: 不启用白名单规则 (空 csproj 或反编译对照源)
+[tests/IoTPlatform.Core.Tests/**/*.cs]
+dotnet_diagnostic.RCS0023.severity = none
+dotnet_diagnostic.RCS0024.severity = none
+dotnet_diagnostic.RCS0025.severity = none
+dotnet_diagnostic.RCS0026.severity = none
+dotnet_diagnostic.RCS0027.severity = none
+dotnet_diagnostic.RCS1264.severity = none
+dotnet_diagnostic.RCS1018.severity = none
+dotnet_diagnostic.RCS1021.severity = none
+dotnet_diagnostic.RCS1036.severity = none
+dotnet_diagnostic.RCS1039.severity = none
+dotnet_diagnostic.RCS1004.severity = none
+dotnet_diagnostic.RCS1007.severity = none
+dotnet_diagnostic.RCS1213.severity = none
+dotnet_diagnostic.RCS1033.severity = none
+dotnet_diagnostic.RCS1037.severity = none

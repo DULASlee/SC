@@ -1,0 +1,82 @@
+id: TASK-023
+title: "E1 移除：保护门纯 path 判定 + 机器写入点自覆盖契约"
+status: ready
+approver: architect
+created: 2026-09-19T14:00:00Z
+created_by: architect
+
+scope:
+  allow_write:
+    - docs/ai-workspace/hooks/commit-msg
+    - docs/ai-workspace/hooks/check_approval.py
+    - .harness/scripts/dispatch.py
+    - .harness/scripts/pipeline.py
+    - .harness/tests/test_check_approval.py
+    - .harness/tests/test_dispatch.py
+    - .harness/tasks/active/TASK-023.yaml
+    - .harness/tasks/active/TASK-008.yaml
+    - .harness/tasks/active/TASK-009.yaml
+    - .harness/tasks/active/TASK-010.yaml
+    - .harness/tasks/active/TASK-011.yaml
+    - .harness/tasks/active/TASK-012.yaml
+    - .harness/tasks/active/TASK-013.yaml
+    - .harness/tasks/active/TASK-014.yaml
+    - .harness/tasks/active/TASK-017.yaml
+    - .harness/tasks/active/TASK-018.yaml
+    - .harness/tasks/active/TASK-019.yaml
+    - .harness/tasks/active/TASK-020.yaml
+    - .harness/tasks/active/TASK-021-base-url-domain-error.yaml
+    - .harness/tasks/active/TASK-029.yaml
+    - docs/superpowers/spec/TASK-023-spec.md
+    - docs/testing/red/TASK-023/**
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 600
+  max_files_changed: 20
+
+depends_on: []
+
+references:
+  - docs/superpowers/spec/TASK-023-spec.md
+  - .harness/tasks/drafts/TASK-022-harness-scripts-cover.yaml (acceptance_tests 先例)
+
+notes: |
+  架构师签发（D1 PASS 机器验收提交无人工批标记；D2 PASS approver 人工签发，本卡 approver 字段
+  即签发记录；禁止 draft 豁免/无 TASK 旁路/自动补 approver/机器验收人工 pass 标记/削弱保护范围）。
+  实施内容：
+  1. commit-msg 移除 EXEMPT_PREFIXES + EXEMPT_TYPES（E1）；首行统一 TASK-XXX 引用 +
+     check_approval 纯 path 判定；SKIP_PROTECTED_CHECK=1 由声明未执行转为已执行
+     （只跳路径判定，不跳 TASK 引用）；hook 解释器 python3||python 回退（Windows 稳健性）。
+  2. check_approval 自生命周期规则：done/已归档卡只可覆盖自身卡文件（active/archive 下按
+     该卡 id 命名），仍需非空 approver + 自覆盖 allow_write + deny 优先；第三方路径一律不覆盖。
+     支撑机器验收 done commit 与归档 rename commit 的自举（保护范围不削弱）。
+  3. dispatch.commit_card_status 前置 card_self_authorized（approver + 自覆盖，fail-fast 可操作报错）；
+     poll 状态标记经同函数；pipeline._mark_done_and_archive 前置同契约 + 卡文件按 id 前缀
+     唯一解析（后缀名兼容）；pipeline.py:310 失效注释（“hook 放行 done 路径”）已修订。
+  4. 一次性迁移：现存 12 张 ready/in-progress 卡批量补 approver: architect + 自覆盖 allow_write
+     （本卡 allow_write 精确枚举，不用通配——通配即 E1 旧病复发）。
+  验收（022 先例 + 红绿证据）：
+  - acceptance_tests = tests/ArchitectureTests/ArchitectureTests.csproj（真实工程，dotnet test 3/3）。
+  - 红态证据 docs/testing/red/TASK-023/：R1 常规前缀不再穿透；R2 无覆盖保护路径拒绝；
+    G1 覆盖卡放行；G2 自生命周期放行；SKIP 通道；R3 dispatch 前置检查拒绝（单测）。
+  - .harness/tests 全量单测绿（含 15 项 check_approval + 5 项 card_self_authorized 新测试）。
+  closeout（架构师 2026-09-19 裁定 R1-C：实施落地即归档，裁定非自报；done→archived 走 L3 收口）：
+  E1 移除实施落地 @28c0f06（commit-msg 纯 path 判定 + check_approval 自生命周期规则 +
+  12 卡 approver 迁移 + 机器写入点自覆盖契约 dispatch/pipeline + pipeline:310 注释修订 D1）；
+  红绿证据 docs/testing/red/TASK-023/（R1 常规前缀不再穿透 / R2 无覆盖拒绝 / G1-G3 放行 /
+  R4 真实遗留暂存拦截）；spec 实施补遗 docs/superpowers/spec/TASK-023-spec.md。

@@ -1,0 +1,50 @@
+id: TASK-029
+title: "沉淀机制④：索引一致性常驻测试 + 参数化沉淀验收"
+status: ready
+approver: architect
+created: 2026-09-19T12:00:00Z
+created_by: architect
+
+scope:
+  allow_write:
+    - docs/ai-workspace/rules/lessons-index.json
+    - docs/ai-workspace/rules/lessons-learned.md
+    - .harness/tasks/active/TASK-029.yaml
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - tests/GenCollector.Tests/LessonsIndexTests.cs
+
+done_when:
+  - "ci: acceptance_tests"
+
+constraints:
+  max_lines_changed: 40
+  max_files_changed: 3
+
+depends_on: []
+
+references:
+  - .harness/rules/governance.md (规则 4 经验沉淀触发)
+  - .harness/tasks/active/TASK-021-base-url-domain-error.yaml (首张沉淀卡，同机制)
+  - tests/GenCollector.Tests/LessonsIndexTests.cs (常驻验收测试)
+
+notes: |
+  架构师 029 裁定④（参数化沉淀；①②③ 全否决，draft 豁免不采用）：
+  - 常驻测试 LessonsIndexTests.cs 定位为「索引一致性常驻测试」，不是沉淀内容本身的业务验收。
+    以 .harness/ 为锚点定位仓库根，读 docs/ai-workspace/rules/lessons-index.json（不在 tests/ 下），
+    逐条断言：lessons 文件存在 + [TASK-XXX] 标记 + key_conclusion 逐字子串。
+    索引缺失/entries 为空时空真通过；索引一落地自动变真门禁（红绿已实证：伪造结论必红）。
+  - 本卡执行 diff = 建/追加 lessons-index.json（TASK-029 条目）+ 在 lessons-learned.md 追加机制沉淀行；
+    均在 docs/，执行者可写，不做任何 tests/ 写入。
+  - 索引条目 key_conclusion 必须是对应 lessons 行的逐字子串（机械一致性约束）。
+  - 与 023 的耦合（架构师钉死）：本卡验收路径在 tests/，023 收紧 tests/** 为纯 path 判定后，
+    本卡仍合法（acceptance_tests 指向常驻测试，过 2.3，执行不触 tests/）；
+    若日后升 pipeline 执行，test 阶段触碰门禁要求 diff 触碰常驻测试，
+    届时须 allow_write 覆盖该测试路径 + 非空 approver。

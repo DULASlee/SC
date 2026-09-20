@@ -1,0 +1,66 @@
+id: TASK-041
+title: "MCP 接线：jqkj-search 单 server + 全局 skills junction 授权登记"
+status: ready
+approver: architect
+created: 2026-09-20T13:00:00Z
+created_by: architect
+
+scope:
+  allow_write:
+    - .mcp.json
+    - docs/ai-workspace/tools/jqkj-search/jqkj_search_mcp.py
+    - docs/ai-workspace/skills/binary-analysis-patterns/**
+    - docs/ai-workspace/skills/ctf-malware/**
+    - docs/ai-workspace/skills/ctf-reverse/**
+    - docs/ai-workspace/skills/unified-memory/**
+    - .harness/tasks/active/TASK-041.yaml
+    - docs/ai-workspace/rules/lessons-learned.md
+    - docs/testing/red/TASK-041/**
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 200
+  max_files_changed: 8
+
+depends_on: []
+
+references:
+  - .mcp.json
+  - docs/ai-workspace/tools/jqkj-search/README.md
+  - docs/ai-workspace/tools/jqkj-search/jqkj_search.py
+
+notes: |
+  架构师选 A 裁定（2026-09-20）：AI 不得自授能力——MCP server 与 skill junction 属
+  能力授权面，必须由治理域卡登记后方可提交。本卡即该授权登记。
+  授权面（allow_write）：
+  1. .mcp.json——根目录单 server 定义（仅 jqkj-search，command/args 指向下方 shim）。
+  2. docs/ai-workspace/tools/jqkj-search/jqkj_search_mcp.py——MCP stdio shim：
+     单一 tool jqkj_search(args) 透传 jqkj_search.py；零三方依赖，newline-delimited
+     JSON-RPC 2.0（initialize / tools/list / tools/call）。
+  3. 四个 skill junction 路径登记（binary-analysis-patterns / ctf-malware / ctf-reverse
+     来自 ~/.minimax/skills，unified-memory 来自 ~/.claude/skills）：登记为授权读取面，
+     **文件系统层 Junction，不入 git**（git 不跟随 junction，避免把外部内容误导入仓库）。
+  验收证据（提交前实测）：
+  - skills 加载：harness 自身 load_skill_texts 走 junction 真读正文 6/6 OK
+    （ctf-reverse 12276B / unified-memory 6008B / find-skills 5456B /
+    superpowers/brainstorming 10598B / binary-analysis-patterns 7856B / ctf-malware 8390B）。
+  - 派发注入：TASK-031 卡临时加 skills 字段 → dispatch.write_skills_file 产出
+    .harness/context/TASK-031-skills.md 16513B，两 skill 正文标记 PRESENT；验后卡已回滚。
+  - MCP 协议：三消息回合全通，tools/call "doc dispatch --top 2" 返回 103 命中
+    （路径+行号+片段）。
+  边界：不改 skills_dir（不动 .harness/dispatch.yaml）；不批量迁移 skills；
+  不写 skill 规范；不做质量评估；不碰 .harness/scripts/**。
+  铁律 15（执行器链路 canary）：本卡不触 executor_argv/执行机器，无需 probe。
