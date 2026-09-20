@@ -88,3 +88,6 @@ MZS01/
 
 # transient root dirs (session scratch, pending architect disposition)
 .ci-fix-patch-TMP/
+
+# python caches everywhere
+**/__pycache__/
