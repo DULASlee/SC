@@ -26,8 +26,6 @@ from dispatch import (  # noqa: E402  复用派发逻辑与卡状态提交，避
     load_config, load_card, spawn_attempt, commit_card_status)
 import ownership  # noqa: E402  (TASK-045)
 from replan import plan_retry, sig_of  # noqa: E402  Phase2 重规划与 loop 病理
-from modelswap import (  # noqa: E402
-    DEFAULT_SETTINGS, maybe_restore, read_selection, verify_selection)
 
 SCRIPTS_DIR = HARNESS_DIR / "scripts"
 ACTIVE_DIR = HARNESS_DIR / "tasks" / "active"
@@ -38,9 +36,13 @@ SIG_HISTORY_KEEP = 20
 
 def _own_release(store, tid: str, reason: str) -> None:
     """任务离开活动链（pass/blocked/超限）→ 释放 ownership（A3-3：
-    释放后 session 方可更替）。释放失败只 WARN，不干扰回收判定。"""
+    释放后 session 方可更替）。释放失败只 WARN，不干扰回收判定。
+    无锁配置的 store（测试桩/老件）跳过。"""
+    ld = getattr(store, "lock_dir", None)
+    if ld is None:
+        return
     try:
-        ownership.force_release(store.lock_dir, tid, reason)
+        ownership.force_release(ld, tid, reason)
     except Exception as exc:  # noqa: BLE001
         print(f"[WARN] {tid} ownership 释放异常（{reason}）："
               f"{type(exc).__name__}: {exc}")
@@ -200,40 +202,6 @@ def _preflight_env_ok(running) -> bool:
                 return False
             return True
     return True  # 无卡可探活，交给逐条处理
-
-
-def _dsh_settings_path(cfg: dict) -> Path:
-    raw = cfg.get("dsh_settings")
-    return Path(raw) if raw else DEFAULT_SETTINGS
-
-
-def finalize_model_restore(sp: Path, store: RunsStore,
-                           just_finished: list[dict]) -> tuple | None:
-    """收尾：maybe_restore 后调 verify，不符则 WARN + 写该轮 RUNS note。
-
-    返回恢复到的 (provider, model)，无需恢复时返回 None。
-    """
-    sp = Path(sp)
-    restored = maybe_restore(sp, store, just_finished)
-    if restored is None:
-        return None
-    provider, model = restored
-    if verify_selection(sp, provider, model):
-        return restored
-    actual = read_selection(sp)
-    msg = (f"[WARN] 模型未恢复：期望 {provider}/{model}，"
-           f"实际 {actual[0]}/{actual[1]}")
-    print(msg)
-    for r in just_finished or []:
-        if isinstance(r, dict) and r.get("model_swapped"):
-            try:
-                prev_note = store.get(r["task_id"], r["attempt"]).get(
-                    "note") or ""
-                note = f"{prev_note}\n{msg}".strip() if prev_note else msg
-                store.update(r["task_id"], r["attempt"], note=note)
-            except (KeyError, AttributeError):
-                pass
-    return restored
 
 
 def _settle_upstream(rec: dict, cfg: dict, store: RunsStore,
@@ -510,16 +478,8 @@ def main() -> int:
                              status="error", verdict="fail-gate")
             except KeyError:
                 pass
-    # 收尾：模型恢复 + 校验（D 快照校验），异常只告警不改返回码
-    try:
-        just_finished = []
-        for rec in running:
-            cur = store.get(rec["task_id"], rec["attempt"])
-            if cur is not None and cur.get("status") != "running":
-                just_finished.append(cur)
-        finalize_model_restore(_dsh_settings_path(cfg), store, just_finished)
-    except Exception as exc:  # noqa: BLE001
-        print(f"[WARN] 模型收尾校验异常：{type(exc).__name__}: {exc}")
+    # TASK-044/047：全局 swap 的收尾恢复链已退役（ADR-008）——
+    # 会话覆盖下全局文件从未被写入，无现场可恢复。
     return 0
 
 

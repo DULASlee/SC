@@ -253,6 +253,10 @@ bash scripts/setup-local-ci.sh
 | `scripts/dispatch.py` | 派发器（扫 ready 卡 → 占坑 → worktree → 拉起 headless → 记账），只做一轮，不常驻 |
 | `scripts/poll.py` | 回收器（查 pid → 读 exitcode → 三层机器门禁 → pass 进 awaiting-review / fail 重试 / 超限 blocked），只做一轮，不常驻 |
 | `scripts/check_local_scope_compat.py` | 按路径加载 `check-local-scope.py` 复用其 `glob_to_regex` 纯函数（复用不复制） |
+| `scripts/coord.py` | TASK-043：协调锁（mkdir+pid+600s stale+二次确认+进程内重入+touch 心跳），账本复合写唯一临界区 |
+| `scripts/ownership.py` | TASK-045：任务归属单一事实源（`<runs>/ownership/`）；claim 仅无主、写/释放仅 owner、冲突拒绝 |
+| `scripts/start-session.py` | TASK-042/045：手工会话 L0 入口（复用 ensure_worktree + claim + 上下文） |
+| `scripts/verify-parallel.py` | TASK-046：三 worktree 真实并发 V1-V10 substrate 验证编排（`--out` UTF-8 证据直写） |
 
 ### 判定权边界（不可让渡）
 
@@ -262,8 +266,8 @@ bash scripts/setup-local-ci.sh
 
 ### 运行约定
 
-- **同一时刻只允许 `dispatch.py` 或 `poll.py` 之一在跑**：`RUNS.jsonl` 无跨进程锁，串行是"崩了重跑即可续"的前提。
-- **headless 执行器不得在 worktree 内自行 `git commit`**：机器门禁按 worktree 的**未提交**改动统计 scope/规模；若执行器已提交，porcelain 为空会被判 `fail-gate` 重试（base-commit 口径统计属 Phase 2）。
+- **账本互斥是机制不是约定（TASK-043）**：双账本（RUNS/PIPELINE）复合"读→检查→预留→写"全程在 `coord.lock` 临界区内，容量含在途 spawning；dispatch/poll 并发安全，"同一时刻只跑其一"降级为性能建议。
+- **headless 执行器不得在 worktree 内自行 `git commit`**：机器门禁按 worktree 的**未提交**改动统计 scope/规模；若执行器已提交，porcelain 为空会被判 `fail-gate` 重试（base-commit 口径统计属 Phase 2）。未领归属的 worktree 提交会被 pre-commit 归属门禁直接拒绝（TASK-042/045；手工会话经 `start-session.py` 领取）。
 - 运行记录 `.harness/runs/RUNS.jsonl`、隔离工作区 `.harness/worktrees/` 均已 gitignore，不入仓。
 
 ### 跑测试
@@ -276,7 +280,7 @@ python -m unittest discover -s .harness/tests -t .harness -v
 
 ### 非目标（Phase 2）
 
-超时熔断（per-run timeout）、事件看板 / UI、dotnet 全量进门禁、`depends_on` 跨卡拓扑排序、worktree base-commit 精确规模统计、`RUNS.jsonl` 跨进程锁。
+超时熔断（per-run timeout）、事件看板 / UI、dotnet 全量进门禁、`depends_on` 跨卡拓扑排序、worktree base-commit 精确规模统计。（`RUNS.jsonl` 跨进程锁原列非目标，已由 TASK-043 实现。）
 
 ---
 
@@ -312,13 +316,13 @@ loop 本身不做进程守护，**崩溃靠外部拉起**：
 ### `pipeline:true` 卡语义
 
 - 卡上写 `pipeline: true` 即管线卡：`dispatch.py` 的 `is_eligible` 直接跳过（`poll.py` 回收时同样跳过，提示"已转管线，poll 跳过"）。
-- 管线卡由 `pipeline.py` 按**九阶段**推进：`analysis → spec → plan → execute → check → test → evidence → accept → pr`，一轮只推进一步；运行账本另开 `.harness/runs/PIPELINE.jsonl`（`owner: pipeline`），与 dispatch 的 `RUNS.jsonl` 槽位互通（`running_count` 全量查询防超发）。
+- 管线卡由 `pipeline.py` 按**九阶段**推进：`analysis → spec → plan → execute → check → test → evidence → accept → pr`，一轮只推进一步；运行账本另开 `.harness/runs/PIPELINE.jsonl`（`owner: pipeline`），与 dispatch 的 `RUNS.jsonl` 经 `capacity_used` 跨账本统一计数、共用同一 `coord.lock` 临界区（TASK-043：旧"全量查询防超发"实为单账本读取，已修正）。
 
-### 模型路由真相（modelswap 真路由）
+### 模型路由真相（会话覆盖，TASK-044；旧全局 swap 链已退役，ADR-008）
 
-- 换模型只改 `dispatch.yaml` 的 `model` 这一行；DSH 模型唯一来源是 settings（`dsh_settings`，默认 `~/.dsh/settings.yaml`）的 `agent-default-model{provider,model}`——`dispatch.yaml` 的值经 `settings.yaml` 生效（卡自带 `model` 优先，否则回退全局）。
-- 有自带 `model` 的卡走派发时 swap：spawning 前持 `modelswap.lock` 锁做"读 + 备份 + 原子写"，只毫秒级；收尾 `maybe_restore` 恢复现场（只看本轮刚收尾的 swapped 记录，全量含 pipeline 查询确认无 running 占用才恢复）。
-- 无自带 `model` 的卡要求 DSH 现状（provider+model 全比）与全局 `model` 一致，**不一致 fail-fast 跳过本卡**（不派发，顺延）；同轮多模型只派第一组模型相同的卡，其余顺延下轮。
+- 换模型只改 `dispatch.yaml` 的 `model` 这一行（全局默认）；卡自带 `model` 优先。DSH 模型基线仍是 `~/.dsh/settings.yaml` 的 `agent-default-model`——但派发路径**只读不写**它。
+- 会话覆盖机制：spawn 时 `modelswap.build_session_override` 读基线（保留 provider 等全部命名空间）→ 替换本任务模型 → 原子写 `<run_dir>/settings.yaml` per-attempt 副本 → 写 `model.patch.yml`（settings 条目 `config.path` 指向副本 + `watch: false`）→ `assemble_executor_argv` 把 `--patch` 注入 `{prompt}` 之前。DSH 值优先级=文件层>组合层，重定向副本即生效值。
+- 全局文件零写入 ⇒ 无锁、无备份、无恢复；多模型可同轮并行（旧"同轮同模型"降级与"模型未对齐 fail-fast"随全局 swap 一起废止）。手工会话可用同一 `--patch` 机制自选模型，互不污染。
 - `model_fallbacks` 为降级链（失败按 `replan.py` 的 `plan_retry` 顺延下一模型，`failure_note` 带往下一轮针对性修复）。
 
 ### 预算数字

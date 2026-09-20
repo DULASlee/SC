@@ -53,7 +53,8 @@ def acquire_singleton(runs_dir, timeout: float = 5) -> Path:
     """原子 mkdir 抢锁 <runs_dir>/loop.lock（内写 pid 文件），超时抛 TimeoutError。
 
     锁 mtime 超 600 秒视为 stale 可打破：二次确认仍超期则删锁重建
-    （仿 modelswap.py acquire_lock，两文件策略一致）。
+    （与协调锁 coord.py 同策略；历史上源自 modelswap.acquire_lock，
+    该全局 swap 链已随 ADR-008 退役）。
     """
     runs_dir = Path(runs_dir)
     runs_dir.mkdir(parents=True, exist_ok=True)

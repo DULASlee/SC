@@ -1,6 +1,6 @@
 id: TASK-047
 title: "退役清理：modelswap 全局 swap 死链删除 + poll 收尾死调用摘除 + README 模型路由/串行约定章节重写"
-status: ready
+status: in-progress
 approver: architect
 created: 2026-09-21T01:30:00Z
 created_by: strong-model

@@ -127,26 +127,28 @@ class TestWorktreeGate(unittest.TestCase):
             self.assertFalse(dispatch.is_worktree_dirty(root))
 
 
-class TestSnapshotVerify(unittest.TestCase):
-    def test_snapshot_writes_file(self):
-        ms = load("modelswap.py", "harness_ms_snap")
-        with TemporaryDirectory() as tmp:
-            sp = Path(tmp) / "settings.yaml"
-            sp.write_text(SETTINGS, encoding="utf-8")
-            dest = Path(tmp) / "snaps"
-            out = ms.snapshot(sp, "pre-swap", dest)
-            self.assertTrue(Path(out).exists())
-            self.assertIn("settings.snapshot.pre-swap.", Path(out).name)
-            self.assertEqual(Path(out).read_bytes(), sp.read_bytes())
+class TestModelOverrideGuards(unittest.TestCase):
+    """TASK-047：原 TestSnapshotVerify 断言已废止的 snapshot/verify_selection
+    （ADR-008）——转换为新契约守卫：退役缺席 + 覆盖件在位（回归锁）。"""
 
-    def test_verify_true_and_false(self):
-        ms = load("modelswap.py", "harness_ms_verify")
+    def test_retired_helpers_absent(self):
+        ms = load("modelswap.py", "harness_ms_g1")
+        for name in ("snapshot", "verify_selection", "swap_for_run",
+                     "maybe_restore", "acquire_lock", "release_lock"):
+            self.assertFalse(hasattr(ms, name),
+                             f"retired API resurrected: modelswap.{name}")
+
+    def test_override_builder_present_and_writes_only_copies(self):
+        import hashlib
+        ms = load("modelswap.py", "harness_ms_g2")
         with TemporaryDirectory() as tmp:
             sp = Path(tmp) / "settings.yaml"
             sp.write_text(SETTINGS, encoding="utf-8")
-            self.assertTrue(ms.verify_selection(
-                sp, "openrouter", "deepseek/deepseek-v4-flash-0731:free"))
-            self.assertFalse(ms.verify_selection(sp, "openrouter", "other:free"))
+            before = hashlib.sha256(sp.read_bytes()).hexdigest()
+            toks = ms.build_session_override(sp, Path(tmp) / "r", "p", "m")
+            self.assertEqual(toks[0], "--patch")
+            self.assertEqual(
+                hashlib.sha256(sp.read_bytes()).hexdigest(), before)
 
 
 class TestUpstreamLedger(unittest.TestCase):
@@ -395,52 +397,21 @@ class TestFallbackFreeze(unittest.TestCase):
             self.assertIn("pilot \u51bb\u7ed3", captured.get("note", ""))
 
 
-class TestFinalizeVerify(unittest.TestCase):
-    def test_restore_consistent_no_note(self):
-        poll = load("poll.py", "harness_poll_fin_ok")
-        ms = load("modelswap.py", "harness_poll_fin_ok_ms")
-        with TemporaryDirectory() as tmp:
-            sp = Path(tmp) / "settings.yaml"
-            sp.write_text(SETTINGS.replace(
-                "deepseek/deepseek-v4-flash-0731:free",
-                "cohere/north-mini-code:free"), encoding="utf-8")
-            runs = load("runs.py", "harness_poll_fin_ok_runs")
-            store = runs.RunsStore(Path(tmp) / "RUNS.jsonl")
+class TestFinalizeRetired(unittest.TestCase):
+    """TASK-047：原 TestFinalizeVerify 断言 poll 收尾恢复链（maybe_restore/
+    verify_selection）——该链随 ADR-008 废止，收尾恢复不复存在。
+    转换为守卫：poll 源码零恢复链引用 + 回收语义仍由 ledger/GC 承担。"""
 
-            class _S:
-                def list_running(self, owner="dispatch"):
-                    return []
-            just = [{"task_id": "T1", "attempt": 1,
-                     "model_swapped": True,
-                     "prev_model": ["openrouter",
-                                    "deepseek/deepseek-v4-flash-0731:free"]}]
-            ret = poll.finalize_model_restore(sp, _S(), just)
-            self.assertEqual(
-                ret, ("openrouter", "deepseek/deepseek-v4-flash-0731:free"))
-            self.assertTrue(ms.verify_selection(
-                sp, "openrouter", "deepseek/deepseek-v4-flash-0731:free"))
-
-    def test_mismatch_warns_and_notes(self):
-        poll = load("poll.py", "harness_poll_fin_warn")
-        with TemporaryDirectory() as tmp:
-            sp = Path(tmp) / "settings.yaml"
-            sp.write_text(SETTINGS, encoding="utf-8")
-            runs = load("runs.py", "harness_poll_fin_warn_runs")
-            store = runs.RunsStore(Path(tmp) / "RUNS.jsonl")
-            store.append({"task_id": "T1", "attempt": 1, "pid": 1,
-                          "worktree": "w", "branch": "b", "run_dir": "r",
-                          "model": "m", "executor": "e",
-                          "status": "awaiting-review",
-                          "model_swapped": True,
-                          "prev_model": ["openrouter", "orig:free"]})
-            # 恢复后仍不一致：桩掉 verify，模拟外部又改了回来
-            poll.verify_selection = lambda sp_, p, m: False
-            poll.read_selection = lambda sp_: ("openrouter", "hijacked:free")
-            just = store._read_all()
-            poll.finalize_model_restore(sp, store, just)
-            got = store.get("T1", 1)
-            self.assertIn("[WARN]", got.get("note", ""))
-            self.assertIn("orig:free", got.get("note", ""))
+    def test_poll_finalize_chain_absent(self):
+        poll = load("poll.py", "harness_poll_fin_ret")
+        for name in ("finalize_model_restore", "maybe_restore",
+                     "verify_selection"):
+            self.assertFalse(hasattr(poll, name),
+                             f"retired finalize resurrected: poll.{name}")
+        text = (Path(__file__).resolve().parent.parent / "scripts" /
+                "poll.py").read_text(encoding="utf-8")
+        self.assertNotIn("finalize_model_restore", text)
+        self.assertNotIn("from modelswap import", text)
 
 
 if __name__ == "__main__":

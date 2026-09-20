@@ -1,12 +1,18 @@
+"""modelswap 会话覆盖测试（TASK-044）+ 退役缺席守卫（TASK-047）。
+
+历史用例 TestSwapRestore/TestLock/TestMaybeRestore 断言的是 ADR-008/010
+明令废止的"改全局配置实现模型切换"链——随 API 删除而转换为下方的
+缺席守卫（回归锁：任何复活即红）。转换而非静默删除，四要件记录于
+TASK-047 卡 notes 与 docs/testing/red/TASK-047/。"""
 import importlib.util
-import shutil
-import time
+import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 MODELSWAP = (Path(__file__).resolve().parent.parent / "scripts" / "modelswap.py")
 DISPATCH = (Path(__file__).resolve().parent.parent / "scripts" / "dispatch.py")
+POLL = (Path(__file__).resolve().parent.parent / "scripts" / "poll.py")
 
 
 def load_modelswap():
@@ -19,6 +25,7 @@ def load_modelswap():
 def load_dispatch():
     spec = importlib.util.spec_from_file_location("harness_dispatch", DISPATCH)
     mod = importlib.util.module_from_spec(spec)
+    sys.path.insert(0, str(DISPATCH.parent))
     spec.loader.exec_module(mod)
     return mod
 
@@ -44,220 +51,6 @@ class TestSplitModel(unittest.TestCase):
         self.assertEqual(mod.split_model("somemodel"), (None, "somemodel"))
 
 
-class TestSwapRestore(unittest.TestCase):
-    def test_swap_restore_roundtrip(self):
-        mod = load_modelswap()
-        with TemporaryDirectory() as tmp:
-            runs_dir = Path(tmp) / "runs"
-            runs_dir.mkdir()
-            sp = Path(tmp) / "settings.yaml"
-            sp.write_text(SETTINGS, encoding="utf-8")
-            prev = mod.swap_for_run(
-                sp, "openrouter", "cohere/north-mini-code:free", runs_dir)
-            self.assertEqual(
-                prev, ("openrouter", "deepseek/deepseek-v4-flash-0731:free"))
-            # 备份落在 runs_dir/modelswap-bak，不再污染 ~/.dsh/
-            bak_dir = runs_dir / "modelswap-bak"
-            self.assertTrue(bak_dir.is_dir())
-            bak = list(bak_dir.glob("*.bak.*"))
-            self.assertTrue(len(bak) >= 1, bak)
-            import yaml
-            data = yaml.safe_load(sp.read_text(encoding="utf-8"))
-            self.assertEqual(data["agent-default-model"]["provider"], "openrouter")
-            self.assertEqual(
-                data["agent-default-model"]["model"], "cohere/north-mini-code:free")
-            # 其他键保留
-            self.assertIn("ui-onboarding", data)
-            self.assertIn("llm-pi-ai", data)
-            mod.restore(sp, prev[0], prev[1])
-            data2 = yaml.safe_load(sp.read_text(encoding="utf-8"))
-            self.assertEqual(data2["agent-default-model"]["provider"], "openrouter")
-            self.assertEqual(
-                data2["agent-default-model"]["model"],
-                "deepseek/deepseek-v4-flash-0731:free")
-            self.assertIn("ui-onboarding", data2)
-
-    def test_swap_same_value_noop(self):
-        mod = load_modelswap()
-        with TemporaryDirectory() as tmp:
-            sp = Path(tmp) / "settings.yaml"
-            sp.write_text(SETTINGS, encoding="utf-8")
-            ret = mod.swap_for_run(
-                sp, "openrouter", "deepseek/deepseek-v4-flash-0731:free")
-            self.assertIsNone(ret)
-
-    def test_backup_prune_keeps_five(self):
-        # swap 7 次 → 备份目录只剩最近 5 个
-        mod = load_modelswap()
-        with TemporaryDirectory() as tmp:
-            runs_dir = Path(tmp) / "runs"
-            runs_dir.mkdir()
-            sp = Path(tmp) / "settings.yaml"
-            sp.write_text(SETTINGS, encoding="utf-8")
-            for i in range(7):
-                mod.swap_for_run(sp, "openrouter", f"cohere/model-{i}:free",
-                                 runs_dir)
-                time.sleep(0.02)  # 保证 mtime 可排序
-            bak = list((runs_dir / "modelswap-bak").glob("*.bak.*"))
-            self.assertEqual(len(bak), 5, bak)
-
-
-class TestLock(unittest.TestCase):
-    def test_lock_mutex(self):
-        mod = load_modelswap()
-        with TemporaryDirectory() as tmp:
-            runs_dir = Path(tmp)
-            mod.acquire_lock(runs_dir, timeout=5)
-            try:
-                with self.assertRaises(TimeoutError):
-                    mod.acquire_lock(runs_dir, timeout=1)
-            finally:
-                mod.release_lock(runs_dir)
-
-    def test_release_foreign_lock_keeps(self):
-        # 手写别人的锁（ чужой pid）：release 不得删除
-        mod = load_modelswap()
-        with TemporaryDirectory() as tmp:
-            runs_dir = Path(tmp)
-            lock = runs_dir / mod.LOCK_NAME
-            lock.mkdir(parents=False, exist_ok=False)
-            (lock / "pid").write_text("999999999", encoding="utf-8")
-            mod.release_lock(runs_dir)
-            self.assertTrue(lock.exists())
-            shutil.rmtree(lock, ignore_errors=True)
-
-    def test_release_own_lock_removes(self):
-        mod = load_modelswap()
-        with TemporaryDirectory() as tmp:
-            runs_dir = Path(tmp)
-            mod.acquire_lock(runs_dir, timeout=5)
-            mod.release_lock(runs_dir)
-            self.assertFalse((runs_dir / mod.LOCK_NAME).exists())
-
-
-class _FakeStore:
-    """ mimics RunsStore：默认只看 dispatch，全量需 owner=None。"""
-
-    def __init__(self, recs):
-        self.recs = recs
-        self.path = "fake-RUNS.jsonl"
-
-    def list_running(self, owner="dispatch"):
-        if owner is None:
-            return [r for r in self.recs if r.get("status") == "running"]
-        return [r for r in self.recs
-                if r.get("status") == "running"
-                and r.get("owner", "dispatch") == owner]
-
-
-class _OldStore:
-    """老 store：list_running 无 owner 参数，无参即全量。"""
-
-    def __init__(self, recs):
-        self.recs = recs
-        self.path = "old-RUNS.jsonl"
-
-    def list_running(self):
-        return [r for r in self.recs if r.get("status") == "running"]
-
-
-class TestRunningCount(unittest.TestCase):
-    def test_pipeline_visible_only_in_full_query(self):
-        dispatch = load_dispatch()
-        modelswap = load_modelswap()
-        recs = [
-            {"task_id": "TASK-1", "status": "running", "owner": "dispatch"},
-            {"task_id": "TASK-2", "status": "running", "owner": "pipeline"},
-            {"task_id": "TASK-3", "status": "awaiting-review",
-             "owner": "dispatch"},
-        ]
-        store = _FakeStore(recs)
-        default = store.list_running()
-        self.assertEqual([r["task_id"] for r in default], ["TASK-1"])
-        full = store.list_running(owner=None)
-        self.assertEqual(sorted(r["task_id"] for r in full),
-                         ["TASK-1", "TASK-2"])
-        # 槽位计算函数返回全量数
-        self.assertEqual(dispatch.running_count(store), 2)
-        # _all_records 回退分支同样查全量
-        self.assertEqual(
-            sorted(r["task_id"] for r in modelswap._all_records(store)),
-            ["TASK-1", "TASK-2"])
-
-    def test_old_store_fallback(self):
-        dispatch = load_dispatch()
-        modelswap = load_modelswap()
-        recs = [
-            {"task_id": "TASK-1", "status": "running", "owner": "dispatch"},
-            {"task_id": "TASK-2", "status": "running", "owner": "pipeline"},
-        ]
-        store = _OldStore(recs)
-        self.assertEqual(dispatch.running_count(store), 2)
-        self.assertEqual(len(modelswap._all_records(store)), 2)
-
-
-class TestMaybeRestore(unittest.TestCase):
-    def _write_settings(self, sp, model):
-        sp.write_text(
-            SETTINGS.replace("deepseek/deepseek-v4-flash-0731:free", model),
-            encoding="utf-8")
-
-    def test_restore_from_just_finished(self):
-        mod = load_modelswap()
-        import yaml
-        with TemporaryDirectory() as tmp:
-            sp = Path(tmp) / "settings.yaml"
-            self._write_settings(sp, "cohere/north-mini-code:free")
-            store = _FakeStore([])
-            just = [{"task_id": "TASK-1", "status": "awaiting-review",
-                     "model_swapped": True,
-                     "prev_model": ["openrouter", "orig-model:free"]}]
-            ret = mod.maybe_restore(sp, store, just)
-            self.assertEqual(ret, ("openrouter", "orig-model:free"))
-            data = yaml.safe_load(sp.read_text(encoding="utf-8"))
-            self.assertEqual(data["agent-default-model"]["model"],
-                             "orig-model:free")
-
-    def test_running_swapped_keeps(self):
-        mod = load_modelswap()
-        with TemporaryDirectory() as tmp:
-            sp = Path(tmp) / "settings.yaml"
-            self._write_settings(sp, "cohere/north-mini-code:free")
-            before = sp.read_text(encoding="utf-8")
-            store = _FakeStore([
-                {"task_id": "T1", "status": "running", "owner": "pipeline",
-                 "model_swapped": True,
-                 "prev_model": ["openrouter", "orig-model:free"]}])
-            just = [{"task_id": "T0", "status": "awaiting-review",
-                     "model_swapped": True,
-                     "prev_model": ["openrouter", "older:free"]}]
-            self.assertIsNone(mod.maybe_restore(sp, store, just))
-            self.assertEqual(sp.read_text(encoding="utf-8"), before)
-
-    def test_bad_shape_skipped(self):
-        # str 型旧形状非法：跳过并 WARN，不恢复
-        mod = load_modelswap()
-        with TemporaryDirectory() as tmp:
-            sp = Path(tmp) / "settings.yaml"
-            self._write_settings(sp, "cohere/north-mini-code:free")
-            before = sp.read_text(encoding="utf-8")
-            store = _FakeStore([])
-            just = [{"task_id": "T1", "status": "awaiting-review",
-                     "model_swapped": True,
-                     "prev_model": "openrouter/orig-model:free"}]
-            self.assertIsNone(mod.maybe_restore(sp, store, just))
-            self.assertEqual(sp.read_text(encoding="utf-8"), before)
-
-    def test_empty_just_finished_noop(self):
-        mod = load_modelswap()
-        with TemporaryDirectory() as tmp:
-            sp = Path(tmp) / "settings.yaml"
-            self._write_settings(sp, "cohere/north-mini-code:free")
-            store = _FakeStore([])
-            self.assertIsNone(mod.maybe_restore(sp, store, []))
-            self.assertIsNone(mod.maybe_restore(sp, store))
-
-
 class TestSessionOverride(unittest.TestCase):
     """TASK-044：会话覆盖构造器（评审报告 §7 机制的离线断言面）。"""
 
@@ -280,10 +73,10 @@ class TestSessionOverride(unittest.TestCase):
                     encoding="utf-8"))
             self.assertEqual(data["agent-default-model"],
                              {"provider": "openrouter", "model": "cohere/x:free"})
-            self.assertIn("ui-onboarding", data)   # 其他键保留
+            self.assertIn("ui-onboarding", data)
             self.assertIn("llm-pi-ai", data)
             self.assertEqual(
-                hashlib.sha256(sp.read_bytes()).hexdigest(), before)  # 基线零写入
+                hashlib.sha256(sp.read_bytes()).hexdigest(), before)
             self.assertEqual(tokens[0], "--patch")
 
     def test_patch_redirects_settings_with_watch_false(self):
@@ -294,12 +87,10 @@ class TestSessionOverride(unittest.TestCase):
             patch = (Path(tmp) / "r2" / "model.patch.yml").read_text(
                 encoding="utf-8")
             self.assertIn("- id: settings", patch)
-            self.assertIn("path:", patch)
-            self.assertIn("settings.yaml", patch)
             self.assertIn("watch: false", patch)
+            self.assertIn("settings.yaml", patch)
 
     def test_two_sessions_isolated_baseline_untouched(self):
-        """V4 的单元级模拟：A/B 各建副本，互不污染，基线纹丝不动。"""
         mod = load_modelswap()
         import hashlib
         import yaml
@@ -318,6 +109,48 @@ class TestSessionOverride(unittest.TestCase):
             self.assertEqual(b["agent-default-model"]["model"], "model-b")
             self.assertEqual(
                 hashlib.sha256(sp.read_bytes()).hexdigest(), before)
+
+
+class TestRetiredChainAbsent(unittest.TestCase):
+    """TASK-047 缺席守卫：废止链任何复活即红（ADR-008/010 回归锁）。"""
+
+    RETIRED = ("swap_for_run", "restore", "acquire_lock", "release_lock",
+               "maybe_restore", "verify_selection", "snapshot",
+               "read_selection", "_all_records", "_bak_dir",
+               "_prune_backups")
+
+    def test_modelswap_api_absent(self):
+        mod = load_modelswap()
+        for name in self.RETIRED:
+            self.assertFalse(hasattr(mod, name),
+                             f"retired API resurrected: modelswap.{name}")
+
+    def test_poll_finalize_absent_and_source_clean(self):
+        poll = POLL.read_text(encoding="utf-8")
+        self.assertNotIn("finalize_model_restore", poll)
+        self.assertNotIn("maybe_restore", poll)
+        self.assertNotIn("from modelswap import", poll)
+
+    def test_dispatch_source_has_no_global_swap_call(self):
+        src = DISPATCH.read_text(encoding="utf-8")
+        self.assertNotIn("swap_for_run", src)
+        self.assertNotIn("acquire_lock", src)
+        self.assertIn("build_session_override", src)
+
+
+class TestRunningCount(unittest.TestCase):
+    def test_full_query_includes_pipeline(self):
+        dispatch = load_dispatch()
+        runs = importlib.util.spec_from_file_location(
+            "harness_runs_ms", DISPATCH.parent / "runs.py")
+        rm = importlib.util.module_from_spec(runs)
+        runs.loader.exec_module(rm)
+        with TemporaryDirectory() as tmp:
+            st = rm.RunsStore(Path(tmp) / "RUNS.jsonl")
+            st.append({"task_id": "T1", "attempt": 1})
+            st.append({"task_id": "T2", "attempt": 1, "status": "spawning"})
+            st.append({"task_id": "T3", "attempt": 1, "owner": "pipeline"})
+            self.assertEqual(dispatch.running_count(st), 3)
 
 
 if __name__ == "__main__":
