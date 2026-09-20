@@ -1,0 +1,67 @@
+id: TASK-042
+title: "L0 手工会话物理隔离：start-session 入口与工作区登记强制钩子"
+status: draft
+created: 2026-09-20T16:20:00Z
+created_by: strong-model
+
+scope:
+  allow_write:
+    - .harness/scripts/start-session.py
+    - .harness/scripts/dispatch.py
+    - .githooks/pre-commit
+    - docs/ai-workspace/hooks/check_session_registration.py
+    - .harness/tests/test_start_session.py
+    - .harness/tests/test_check_session_registration.py
+    - docs/testing/red/TASK-042/**
+    - .harness/tasks/active/TASK-042.yaml
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 300
+  max_files_changed: 12
+
+depends_on: []
+
+references:
+  - docs/superpowers/plans/2026-09-20-parallel-session-isolation-plan-v1.1.md
+  - docs/superpowers/spec/EXISTING-MAP.md
+  - docs/reports/2026-09-20-parallel-session-plan-review.md
+
+pipeline: false
+pre_approved: true
+
+notes: |
+  ## 背景
+  v1.1 计划 P1（§9）+ 修订 A4：手工会话复用既有 worktree/branch 机制，
+  以 start-session.py 薄包装（ensure_worktree + start-task 上下文 + 登记）
+  提供入口；"禁止绕过"以 pre-commit 钩子校验（提交发生地=已登记 worktree
+  且 owner 匹配）落成机制。EXISTING-MAP §1-4/§3-B 已核实：登记缺失与
+  worktree 内钩子读分支快照卡两个问题都在。
+
+  ## 边界（v1.1 §15/§16）
+  不改全局 ledger、model routing、task state authority、Hook 体系其余部分。
+  dispatch.py 仅允许为复用做最小重构（导出 ensure_worktree 或提公共函数）。
+  定位协调根/登记簿用 git rev-parse --git-common-dir 锚点（实测可用）。
+
+  ## TDD
+  红态证据先落 docs/testing/red/TASK-042/。
+
+  ## 验收说明
+  acceptance_tests 为形式占位（TASK-023 先例；dotnet 面本卡零改动恒绿）。
+  实质验收 = allow 内 .harness/tests/test_start_session.py 与
+  test_check_session_registration.py（python -m unittest discover -s
+  .harness/tests -t .harness），先红后绿，红态留 docs/testing/red/TASK-042/。

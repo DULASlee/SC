@@ -1,0 +1,73 @@
+id: TASK-044
+title: "L1 模型会话隔离：per-attempt 设置副本 + --patch 重定向，退役全局 swap"
+status: draft
+created: 2026-09-20T16:20:00Z
+created_by: strong-model
+
+scope:
+  allow_write:
+    - .harness/scripts/modelswap.py
+    - .harness/scripts/dispatch.py
+    - .harness/scripts/pipeline.py
+    - .harness/scripts/run-exec.py
+    - .harness/tests/test_modelswap.py
+    - .harness/tests/test_dispatch.py
+    - .harness/tests/test_pipeline.py
+    - docs/testing/red/TASK-044/**
+    - .harness/tasks/active/TASK-044.yaml
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 400
+  max_files_changed: 12
+
+depends_on: [TASK-042]
+
+references:
+  - docs/superpowers/plans/2026-09-20-parallel-session-isolation-plan-v1.1.md
+  - docs/reports/2026-09-20-parallel-session-plan-review.md
+  - docs/superpowers/spec/EXISTING-MAP.md
+
+pipeline: false
+pre_approved: true
+
+notes: |
+  ## 背景
+  v1.1 计划 P4（§12）+ 修订 A2（设计已定案，评审报告 §7 双探针实证）：
+  派发时读全局 ~/.dsh/settings.yaml（只读）→ 替换 agent-default-model →
+  写 per-attempt 副本 → 写 model.patch.yml（settings 条目 path 指向副本，
+  watch: false）→ executor_argv 追加 --patch。全局文件零写入，
+  modelswap 的 swap/restore/lock/maybe_restore 链在派发路径整体退役，
+  dispatch.py "同轮同模型" 降级与竞态注释作废。
+
+  ## 关键约束（探针已证）
+  值优先级=文件层>组合层，故必须重定向文件而非 patch 模型条目；
+  patch 里显式 watch: false（否则全局改写会热发布进运行中会话）；
+  读取时点在进程启动瞬间，先落副本后拉起。
+
+  ## 铁律 15
+  本卡改 executor_argv 构造方式，落地前必须 alive-probe 级真 headless
+  派发留证（RUNS + 真实 exit code），probe 未过禁止 dispatch。
+  注意 dispatch.yaml 当前 model 行免费档已上游 404（评审报告 R1c），
+  探针前需架构师先确认模型可用，否则 canary 门会拒整轮派发——这是本卡
+  的外部前置，不属本卡范围，  卡内不得自行改 dispatch.yaml 的 model。
+
+  ## 验收说明
+  acceptance_tests 为形式占位（TASK-023 先例）。实质验收 = allow 内
+  test_modelswap/test_dispatch/test_pipeline（unittest discover -t .harness）
+  + 双会话真实探针（复用评审报告 §7 方法：全局哈希不变断言），
+  红态留 docs/testing/red/TASK-044/。

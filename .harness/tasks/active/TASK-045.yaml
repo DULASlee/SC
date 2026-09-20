@@ -1,0 +1,71 @@
+id: TASK-045
+title: "L2 任务归属：单一 ownership 事实源、claim 冲突显式拒绝、owner-only 写"
+status: draft
+created: 2026-09-20T16:20:00Z
+created_by: strong-model
+
+scope:
+  allow_write:
+    - .harness/scripts/ownership.py
+    - .harness/scripts/coord.py
+    - .harness/scripts/dispatch.py
+    - .harness/scripts/poll.py
+    - .harness/scripts/start-session.py
+    - .harness/tests/test_ownership.py
+    - .harness/tests/test_coord.py
+    - .harness/tests/test_dispatch.py
+    - .githooks/pre-commit
+    - docs/ai-workspace/hooks/check_session_registration.py
+    - docs/testing/red/TASK-045/**
+    - .harness/tasks/active/TASK-045.yaml
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 400
+  max_files_changed: 14
+
+depends_on: [TASK-042, TASK-043]
+
+references:
+  - docs/superpowers/plans/2026-09-20-parallel-session-isolation-plan-v1.1.md
+  - docs/superpowers/spec/EXISTING-MAP.md
+
+pipeline: false
+pre_approved: true
+
+notes: |
+  ## 背景
+  v1.1 计划 P5（§13）+ 修订 A3：ownership 落协调根 <runs>/ownership/，
+  记录 TaskId/OwnerSessionId/OwnerWorktree/State。claim 临界区=
+  持锁→读卡→验无主→写 in-progress→commit→记 ownership→释锁；
+  非 owner 写任务状态=拒绝（不是 warning）。
+
+  ## 三条硬语义（A3，施工不得偏离）
+  1. ownership 键 = TaskId，不是 attempt；
+  2. 同任务 attempt 重试链合法复用同一 worktree（复位后重派）；
+  3. OwnerSessionId 变更仅在任务释放（blocked/awaiting-review/done）后。
+  违反 2/3 会打断现有重试机制并误伤 Gate F 回归。
+
+  ## 判定权不变
+  dispatcher/本卡实现永不写 done；done 唯一来源仍是人类 verify-all.py
+  + archive-task.py（dispatcher 三规则照旧）。
+
+  ## 验收说明
+  acceptance_tests 为形式占位（TASK-023 先例）。实质验收 = allow 内
+  test_ownership（含 claim 冲突拒绝、非 owner 写拒绝、重试链复用同
+  worktree 三用例）+ test_coord/test_dispatch 回归，红态留
+  docs/testing/red/TASK-045/。

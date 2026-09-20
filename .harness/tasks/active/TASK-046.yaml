@@ -1,0 +1,68 @@
+id: TASK-046
+title: "P6 真实三 worktree 并发验证与完工报告（V1-V10 + Gate A-G）"
+status: draft
+created: 2026-09-20T16:20:00Z
+created_by: strong-model
+
+scope:
+  allow_write:
+    - .harness/scripts/verify-parallel.py
+    - docs/testing/red/PARALLEL-SAFETY/**
+    - docs/reports/2026-09-21-parallel-safety-completion-report.md
+    - docs/adr/ADR-006-worktree-local-not-authoritative.md
+    - docs/adr/ADR-007-repo-level-shared-coordination.md
+    - docs/adr/ADR-008-session-scoped-model-override.md
+    - docs/adr/ADR-009-single-task-owner.md
+    - docs/adr/ADR-010-rejection-of-legacy-parallel-models.md
+    - .harness/tasks/active/TASK-046.yaml
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - .harness/scripts/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 500
+  max_files_changed: 12
+
+depends_on: [TASK-042, TASK-043, TASK-044, TASK-045]
+
+references:
+  - docs/superpowers/plans/2026-09-20-parallel-session-isolation-plan-v1.1.md
+  - docs/reports/2026-09-20-parallel-session-plan-review.md
+
+pipeline: false
+pre_approved: true
+
+notes: |
+  ## 背景
+  v1.1 计划 P6（§14）+ 完工验收（§19）：非单元测试，是真实三
+  Worktree/Branch/Task 同时运行的证据链。verify-parallel.py 编排 V1-V10
+  （含 B4 新增 V9 重试链、V10 主树卡提交并发；B2 主树只读依赖），
+  逐 Gate（A-G）产出 Pass/Fail + Evidence，落完工报告（§20 指定格式）。
+
+  ## 本卡不得做的事
+  不改任何生产脚本（deny .harness/scripts/**）；发现问题→记录→按 §21
+  判断是否属边界，越界项进 FOLLOW-UP/OUT-OF-SCOPE，不顺手修。
+  只有 V1-V10 与 Gate A-G 全绿才允许 PARALLEL-SAFETY = CLOSED；
+  任一红 → 本卡标 blocked，回到对应实现卡修复后重跑。
+
+  ## 前置
+  dispatch.yaml model 行须已由架构师确认可用（否则 V3/V4/V7 无法起跑，
+  见评审报告 R1c）。ADR-006~010 内容照 v1.1 §18 决策与显式废止清单撰写。
+
+  ## 验收说明
+  acceptance_tests 为形式占位（TASK-023 先例）。实质验收 =
+  verify-parallel.py 真实三 worktree 并发 V1-V10 证据链 + Gate A-G
+  逐项 Pass/Fail，全部落 docs/testing/red/PARALLEL-SAFETY/ 与完工报告。

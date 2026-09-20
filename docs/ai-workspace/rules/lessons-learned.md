@@ -95,4 +95,6 @@ px skills update 会用实体副本覆盖 Junction，更新后必须复查 LinkT
 - [汇报][2026-09-20] 对话汇报里写"成立（modelswap.py:47-64 _write_doc …）"= 零信息，人无法核对只能选择信或不信 → 已立铁律 16（正文零技术名词、结论前置、一次只提一个待拍板问题），根因与上次"手册数字未对码"同源：有凭据就把凭据当交付物；入库文档照旧写全细节，只改呈现位置
 - [plan-review][2026-09-20] 评审实施计划必须先对码取证再下结论：并行方案 6 断言中 2 失实（账本其实已集中于主树 .harness/runs、模型配置写入点是用户级 ~/.dsh/settings.yaml 而非仓库级）+ 1 未证实（DSH 会话级模型覆盖能力是否存在）→ Formal Plan 冻结前须把每条断言对到实现行；方案自带的 P0 章节不能替代评审者独立取证
 - [model-override][2026-09-20] DSH 会话级模型隔离已探针实证可行：`dsh --patch <p.yml>` 把 settings 条目重定向到 per-attempt 设置副本（config.path + watch:false；值优先级 文件层>组合层，dsh-settings mergeLayers 顺序），全局 settings.yaml 零写入（SHA256 前后一致）→ 派发侧模型切换可纯配置实现，modelswap 的 swap/restore/锁链可退役；探针顺带实测 openrouter `deepseek/deepseek-v4-flash-0731:free` 免费档已上游 404 下线（dispatch.yaml 默认 model 行失效，待架构师改）
+- [eol-landmine][2026-09-20] CRLF 入仓的 blob × `.gitattributes` 显式 `eol=lf` 规则 = 该文件在**每个新 worktree 永久幻影脏**（status/diff 按属性先清洗工作区再比对 CRLF blob，checkout 修不好，只有 `git add --renormalize` 重规范化才行；`text=auto` 靠 safe-crlf 豁免躲过）→ 并行门禁（porcelain 算 scope/规模）会被幻影毒化成全量 fail-scope，施工前必须重规范化 + 逐文件字节级"仅剥 CR 零内容差"证明后单独特地提交
+- [card-authoring][2026-09-20] `validate-task-card` 强制 acceptance_tests ∈ `tests/` 或 `*.Tests/` → harness Python 卡按 TASK-022/023 先例：填 ArchitectureTests.csproj 形式占位，实质验收（python 测试+红态目录）写进 notes 与 allow_write；不要给此类卡挂 `skills: [test-driven-development]`——证据门禁会拿占位 csproj 比对，必判 fail-skill
 
