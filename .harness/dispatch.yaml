@@ -1,6 +1,6 @@
 # .harness/dispatch.yaml
 # 中央配置：换模型只改 model 这一行。dispatcher 把 model 打进运行记录 + prompt 头。
-model: openrouter/deepseek/deepseek-v4-flash-0731:free
+model: openrouter/cohere/north-mini-code:free
 
 # 执行器命令模板，{prompt} 会被替换为派发 prompt（引用上下文文件绝对路径，不内联全文）。
 executor_argv: ["dsh", "--profile", "headless", "{prompt}"]
@@ -16,7 +16,7 @@ max_tasks_per_run: 10
 worktree_root: .harness/worktrees
 runs_dir: .harness/runs
 
-model_fallbacks: ["cohere/north-mini-code:free", "nvidia/nemotron-3-super-120b-a12b:free"]
+model_fallbacks: ["minimax-cn/MiniMax-M3"]
 auto_fallback: true
 loop_interval_seconds: 120
 prompt_budget: {failure_note_max_chars: 2000, skill_max_bytes: 12288}
