@@ -159,7 +159,14 @@ def check_scope_and_scale(files: list[str], scale: dict[str, int],
 
 
 def reset_worktree(worktree: Path) -> None:
-    """复位 worktree（只动 worktree，不碰主仓）：丢弃未提交改动。"""
+    """复位 worktree（只动 worktree，不碰主仓）：丢弃未提交改动。
+
+    对「不存在 / 非目录」的目标是幂等 no-op，绝不抛异常：worktree 可能
+    已被外部清理（人工删 / 上轮 GC 已回收），subprocess.run(cwd=缺失路径)
+    抛 NotADirectoryError 会穿透回收链、阻塞 ownership 释放（TASK-054）。
+    """
+    if not worktree or not worktree.is_dir():
+        return
     run(["git", "reset", "--hard"], cwd=worktree)
     run(["git", "clean", "-fd"], cwd=worktree)
 
@@ -322,6 +329,14 @@ def _settle(rec: dict, cfg: dict, store: RunsStore,
         store.update(tid, attempt, status="retrying", verdict=verdict,
                      exit_code=code, sig_history=hist,
                      model_fallback_hit=hit, upstream_streak=0)
+        # TASK-054：spawn_attempt 用 store.append 默认 sig_history=[] 创建新
+        # attempt；若不把累计 hist 种回去，下一轮 plan_retry 仍只见 tail=1，
+        # retry_escalated（换模型）与 tail>=3 blocked_early 永不触发。
+        try:
+            new_attempt = store.attempts(tid)
+            store.update(tid, new_attempt, sig_history=hist)
+        except KeyError:
+            pass
         print(f"[INFO] {tid} 判定 {verdict}，已复位 worktree 并重派新 attempt")
     else:
         set_card_status(tid, "blocked")
