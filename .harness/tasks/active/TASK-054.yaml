@@ -1,6 +1,6 @@
 id: TASK-054
 title: "poll 回收韧性：worktree 缺失不再中断回收 + 重派携带累计 sig_history"
-status: ready
+status: in-progress
 created: '2026-09-21T05:09:42Z'
 created_by: strong-model
 approver: architect
