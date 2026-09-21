@@ -1,2 +1,5 @@
 #!/bin/bash
-exec "$(git rev-parse --show-toplevel)/docs/ai-workspace/hooks/commit-msg" "$@"
+# TASK-048: forward to single-source hook via git-common-dir main-tree anchor
+# (worktrees on pre-merge branches still carry their own copy until recreated).
+_MAINROOT="$(cd "$(dirname "$(git rev-parse --git-common-dir)")" && pwd)"
+exec "$_MAINROOT/docs/ai-workspace/hooks/commit-msg" "$@"

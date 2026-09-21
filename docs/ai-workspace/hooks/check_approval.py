@@ -171,13 +171,17 @@ def is_approved(staged_files: list[str], cards_dir: Path) -> tuple[bool, str]:
 
 
 def _default_cards_dir() -> Path:
+    # TASK-048: git-common-dir 主树锚点（ADR-006/缺陷 B）——worktree 提交读
+    # 主树实时卡，而非分支快照卡。git 不可用时退回相对路径（行为同旧）。
     try:
         r = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
+            ["git", "rev-parse", "--git-common-dir"],
             capture_output=True, text=True, check=True, encoding="utf-8",
         )
-        return Path(r.stdout.strip()) / ".harness" / "tasks" / "active"
-    except (subprocess.CalledProcessError, OSError):
+        common = Path(r.stdout.strip()).resolve()
+        root = common.parent if common.name == ".git" else common.parent
+        return root / ".harness" / "tasks" / "active"
+    except (subprocess.CalledProcessError, OSError, ValueError):
         return Path(".harness") / "tasks" / "active"
 
 

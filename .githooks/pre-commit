@@ -23,11 +23,13 @@ _GITCOMMON="$(git rev-parse --git-common-dir)"
 _MAINROOT="$(cd "$_GITCOMMON/.." && pwd)"
 python "$_MAINROOT/docs/ai-workspace/hooks/check_session_registration.py" || fail "worktree commit not bound to an active ownership claim (run .harness/scripts/start-session.py TASK-XXX)"
 
-# 1. Task card validation
-python .harness/scripts/validate-task-card.py --all || fail "task card validation failed"
+# 1. Task card validation (TASK-048: engine + cards from main-tree anchor —
+#    validator reads tasks/active relative to its own dir, so run the MAIN copy)
+python "$_MAINROOT/.harness/scripts/validate-task-card.py" --all || fail "task card validation failed"
 
-# 2. Local scope check (allow_write / deny_write / scale, per active card)
-python .harness/scripts/check-local-scope.py || fail "scope check failed"
+# 2. Local scope check (allow_write / deny_write / scale; TASK-048: main-tree
+#    card source + ownership-resolved active card; run the MAIN copy)
+python "$_MAINROOT/.harness/scripts/check-local-scope.py" || fail "scope check failed"
 
 # 3. Contract consistency
 python scripts/check-contract-consistency.py || fail "contract consistency failed"
