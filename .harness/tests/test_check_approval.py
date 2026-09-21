@@ -254,5 +254,38 @@ class TestAsciiOutput(unittest.TestCase):
             self.assertTrue(out.isascii(), f"non-ASCII hook output: {out!r}")
 
 
+# ---------- TASK-048：卡目录主树锚定（缺陷 B 收口） ----------
+
+class TestMainTreeAnchor(unittest.TestCase):
+    def test_default_cards_dir_resolves_main_tree(self):
+        """_default_cards_dir 必须锚定 git-common-dir 主树，非 toplevel
+        （worktree 内解析若指分支快照 = 旧缺陷 B）。"""
+        import os
+        import subprocess as sp
+        mod = load_mod()
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".harness" / "tasks" / "active").mkdir(parents=True)
+            (root / "f.txt").write_text("f", encoding="utf-8")
+            for a in (["init"], ["config", "user.email", "t@t"],
+                      ["config", "user.name", "t"], ["add", "-A"],
+                      ["commit", "-m", "init"]):
+                sp.run(["git", *a], cwd=str(root), capture_output=True)
+            wt = root / "wt"
+            r = sp.run(["git", "worktree", "add", "-B", "feat/t", str(wt)],
+                       cwd=str(root), capture_output=True, text=True)
+            assert r.returncode == 0, r.stderr
+            cwd0 = os.getcwd()
+            try:
+                os.chdir(wt)
+                got = str(mod._default_cards_dir()).replace("\\", "/").lower()
+            finally:
+                os.chdir(cwd0)
+            want = str((root / ".harness" / "tasks" / "active")).lower()
+            want = want.replace("\\", "/")
+            # 规范化盘符大小写差异
+            self.assertEqual(Path(got).resolve(), Path(want).resolve())
+
+
 if __name__ == "__main__":
     unittest.main()

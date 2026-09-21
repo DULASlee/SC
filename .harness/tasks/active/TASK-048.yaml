@@ -1,0 +1,68 @@
+id: TASK-048
+title: "本地提交门禁并行正确性收口：卡源主树锚定（缺陷B）+ scope 检查多卡旁路关闭（缺陷C）"
+status: in-progress
+approver: architect
+created: 2026-09-21T02:40:00Z
+created_by: strong-model
+
+scope:
+  allow_write:
+    - .harness/scripts/check-local-scope.py
+    - .harness/tests/test_check_local_scope.py
+    - .harness/tests/test_check_approval.py
+    - docs/ai-workspace/hooks/check_approval.py
+    - docs/ai-workspace/hooks/commit-msg
+    - .githooks/pre-commit
+    - .githooks/commit-msg
+    - .githooks/pre-push
+    - .harness/tasks/active/TASK-048.yaml
+    - docs/testing/red/TASK-048/**
+    - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - .harness/tests/test_check_local_scope.py
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 400
+  max_files_changed: 14
+
+depends_on: [TASK-043, TASK-045]
+
+references:
+  - docs/superpowers/plans/2026-09-20-parallel-session-isolation-plan-v1.1.md
+  - docs/superpowers/spec/EXISTING-MAP.md
+  - docs/adr/ADR-006-worktree-local-not-authoritative.md
+
+pipeline: false
+pre_approved: true
+
+notes: |
+  ## 背景（EXISTING-MAP 缺陷 B 后半 + C）
+  1. ownership 引擎已主树锚定，但 check_approval 卡目录、check-local-scope 卡目录、
+     commit-msg/pre-push 转发壳仍按 toplevel 解析——worktree 提交读分支快照卡。
+  2. check-local-scope "active 卡非唯一即 [WARN] skip"——并发多卡时本地
+     scope 门禁静默失效（实测 20+ 张活跃卡必跳过）。
+
+  ## 方案（最小语义变更）
+  - 卡/引擎路径统一 git-common-dir 主树锚点（ADR-006）；build/契约/规模
+    统计仍查被提交树本体。
+  - worktree 提交：活动卡从 ownership 反查（本 worktree claimed task）→
+    完整 scope+规模；无归属→skip+INFO（ownership 门已拒提交，纵深防御）。
+  - 主树提交：唯一活跃卡→旧行为；多卡→逐文件并集覆盖判定（任一活跃卡
+    allow 覆盖且未命中其 deny；无覆盖=violation）；零卡→保留 WARN skip。
+  - --task-id 显式最优先。本会话执行流即 dogfood：卡在工作区分支落地，
+    主树不留副本（防并发 dispatcher 误领）。
+  ## 已知迁移边界
+  合并前旧 worktree 副本仍带旧转发壳，重建后生效（git hooksPath 按树解析）。
+  acceptance_tests 用 .harness/tests/ 新格式（TASK-050 validator 放宽后启用）。

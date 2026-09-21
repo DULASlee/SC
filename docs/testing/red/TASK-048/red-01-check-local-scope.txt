@@ -1,0 +1,83 @@
+FFFF.F
+======================================================================
+FAIL: test_explicit_task_id_wins (tests.test_check_local_scope.TestCheckLocalScope.test_explicit_task_id_wins)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\worktrees\TASK-048\.harness\tests\test_check_local_scope.py", line 160, in test_explicit_task_id_wins
+    self.assertEqual(r.returncode, 0, r.stdout)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 0 : [INFO] using task card: TASK-902.yaml (status: ready)
+
+[FAIL] 2 scope violation(s):
+  - [OUT-OF-SCOPE] .harness/tasks/active/TASK-901.yaml outside allow_write
+  - [OUT-OF-SCOPE] .harness/tasks/active/TASK-902.yaml outside allow_write
+
+Fix: limit changes to the card allow_write, or open a new task card.
+Note: protected paths (.github/, tests/, .harness/, ...) are enforced by the commit-msg hook + check_approval.py: an active card whose allow_write covers the file with a non-empty approver field, or architect sets SKIP_PROTECTED_CHECK=1.
+
+
+======================================================================
+FAIL: test_main_tree_multi_cards_union_not_skipped (tests.test_check_local_scope.TestCheckLocalScope.test_main_tree_multi_cards_union_not_skipped)
+缺陷 C：多活跃卡时旧行为 WARN+skip（红）；新行为逐文件并集判定。
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\worktrees\TASK-048\.harness\tests\test_check_local_scope.py", line 122, in test_main_tree_multi_cards_union_not_skipped
+    self.assertNotEqual(r2.returncode, 0,
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+                        "uncovered file must FAIL in union mode")
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 == 0 : uncovered file must FAIL in union mode
+
+======================================================================
+FAIL: test_main_tree_single_card_still_checks (tests.test_check_local_scope.TestCheckLocalScope.test_main_tree_single_card_still_checks)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\worktrees\TASK-048\.harness\tests\test_check_local_scope.py", line 104, in test_main_tree_single_card_still_checks
+    self.assertEqual(r.returncode, 0, r.stdout)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 0 : [INFO] using task card: TASK-901.yaml (status: ready)
+
+[FAIL] 1 scope violation(s):
+  - [OUT-OF-SCOPE] .harness/tasks/active/TASK-901.yaml outside allow_write
+
+Fix: limit changes to the card allow_write, or open a new task card.
+Note: protected paths (.github/, tests/, .harness/, ...) are enforced by the commit-msg hook + check_approval.py: an active card whose allow_write covers the file with a non-empty approver field, or architect sets SKIP_PROTECTED_CHECK=1.
+
+
+======================================================================
+FAIL: test_no_active_cards_warns_skip (tests.test_check_local_scope.TestCheckLocalScope.test_no_active_cards_warns_skip)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\worktrees\TASK-048\.harness\tests\test_check_local_scope.py", line 168, in test_no_active_cards_warns_skip
+    self.assertIn("no active task", r.stdout.lower())
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'no active task' not found in '[warn] no unique active task card (0 or >= 2 ready/in-progress), skipping scope check\n       for business code commits pass --task-id task-xxx explicitly\n'
+
+======================================================================
+FAIL: test_worktree_without_ownership_skips_with_note (tests.test_check_local_scope.TestCheckLocalScope.test_worktree_without_ownership_skips_with_note)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\worktrees\TASK-048\.harness\tests\test_check_local_scope.py", line 150, in test_worktree_without_ownership_skips_with_note
+    self.assertIn("no ownership", r.stdout.lower())
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'no ownership' not found in '[warn] no unique active task card (0 or >= 2 ready/in-progress), skipping scope check\n       for business code commits pass --task-id task-xxx explicitly\n'
+
+----------------------------------------------------------------------
+Ran 6 tests in 4.069s
+
+FAILED (failures=5)
+..................F
+======================================================================
+FAIL: test_default_cards_dir_resolves_main_tree (tests.test_check_approval.TestMainTreeAnchor.test_default_cards_dir_resolves_main_tree)
+_default_cards_dir 必须锚定 git-common-dir 主树，非 toplevel
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\worktrees\TASK-048\.harness\tests\test_check_approval.py", line 287, in test_default_cards_dir_resolves_main_tree
+    self.assertEqual(Path(got).resolve(), Path(want).resolve())
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Windo[17 chars]admin/AppData/Local/Temp/tmpv2ksahrw/wt/.harness/tasks/active') != Windo[17 chars]admin/AppData/Local/Temp/tmpv2ksahrw/.harness/tasks/active')
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.435s
+
+FAILED (failures=1)
