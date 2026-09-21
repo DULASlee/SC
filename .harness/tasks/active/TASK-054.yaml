@@ -1,0 +1,74 @@
+id: TASK-054
+title: "poll 回收韧性：worktree 缺失不再中断回收 + 重派携带累计 sig_history"
+status: ready
+created: '2026-09-21T05:09:42Z'
+created_by: strong-model
+approver: architect
+scope:
+  allow_write:
+  - .harness/scripts/poll.py
+  - .harness/tests/test_poll_reclaim_resilience.py
+  - .harness/tasks/active/TASK-054.yaml
+  - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+  - src/**
+  - tests/**
+  - contracts/**
+  - .github/**
+  - Directory.Build.props
+  - Directory.Build.targets
+acceptance_tests:
+- .harness/tests/test_poll_reclaim_resilience.py
+done_when:
+- 'ci: harness_tests'
+constraints:
+  max_lines_changed: 150
+  max_files_changed: 3
+references:
+- .harness/scripts/poll.py
+- .harness/scripts/replan.py
+notes: |
+  ## 背景（2026-09-21 TASK-011 回收现场取证，两处独立缺陷）
+
+  (1) worktree 缺失使整条回收链崩溃。
+      poll._settle 在 fail-exec 分支调用 reset_worktree(rec["worktree"])；
+      当 worktree 目录已被删除时，subprocess.run(cwd=<缺失路径>) 抛
+      NotADirectoryError，异常穿透 _settle 被 main 的单条兜底捕获，
+      结果只把 RUNS 记录标成 error（verdict=fail-gate），
+      _own_release 从未执行，ownership 残留 claimed。
+      现场证据：.harness/runs/ownership/TASK-011.json 停在
+      state=claimed / released_at=null，人工 force_release 才收尾。
+
+  (2) 重派不携带累计 sig_history，使换模型与病理守卫全部不可达。
+      _settle 用 hist = rec.sig_history + [sig] 计算病理，但 spawn 出的
+      新 attempt 记录 sig_history 仍为 []（RunsStore.append 默认值），
+      于是 plan_retry 每次只看 tail=1 -> retry_same（同模型重试）；
+      retry_escalated（model_fallbacks 换模型）与 tail>=3 的
+      blocked_early 永不触发。
+      现场证据：plan_retry([sig]) -> retry_same(model_override=None)；
+      只有 plan_retry([sig, sig]) 才 -> cohere/north-mini-code:free。
+      后果：模型行失效（OpenRouter 404）时，全部重试预算被烧在同一个
+      死 slug 上，最后 blocked——TASK-011 本会如此，靠人工回收才止损。
+
+  ## 目标
+  让 .harness/tests/test_poll_reclaim_resilience.py 由红转绿，且不破坏
+  既有 .harness/tests 全量单测（done_when 由 ci: harness_tests 判定）。
+
+  ## 必须满足的不变量
+  A. reset_worktree(worktree) 对「不存在 / 非目录」的目标是幂等 no-op，
+     绝不抛异常（回收链不得因 worktree 缺失而中断）。
+  B. poll 重派出的新 attempt 记录必须携带本轮累计 sig_history（即 hist），
+     使下一次同签名失败时 plan_retry 看到 tail>=2 -> retry_escalated。
+
+  ## 边界
+  - 只改 .harness/scripts/poll.py。_settle_upstream 里已有
+    store.update(tid, new_attempt, ...) 的同类写法，可照此对齐。
+  - 不得修改验收测试文件（已冻结，改测试视为作弊）。
+  - 不得修改 .harness/scripts/dispatch.py：spawn_attempt 接口保持稳定，
+    且主线工作区另有未提交改动，越界会引发冲突。
+  - 不得改动卡状态提交逻辑与 replan.plan_retry 的语义。
+
+  ## 参考
+  - .harness/scripts/poll.py: reset_worktree / _settle / _settle_upstream
+  - .harness/scripts/replan.py: plan_retry / sig_of（纯函数，勿改）
+model: minimax-cn/MiniMax-M3
