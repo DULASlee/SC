@@ -1,6 +1,7 @@
 id: TASK-014
 title: "Roslynator 白名单全仓推广 + 警告消解"
 status: ready
+approver: architect
 created: 2026-09-18T00:00:00Z
 created_by: architect
 depends_on: [TASK-012]

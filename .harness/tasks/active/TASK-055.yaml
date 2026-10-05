@@ -1,0 +1,54 @@
+id: TASK-055
+title: "harness 模型路由配置自洽：清除死 slug 与 primary/fallback 自回退"
+status: in-progress
+created: '2026-09-21T05:41:30Z'
+created_by: strong-model
+approver: architect
+scope:
+  allow_write:
+  - .harness/dispatch.yaml
+  - .harness/tests/test_dispatch_config.py
+  - .harness/tasks/active/TASK-055.yaml
+  deny_write:
+  - src/**
+  - tests/**
+  - contracts/**
+  - .github/**
+  - Directory.Build.props
+  - Directory.Build.targets
+acceptance_tests:
+- .harness/tests/test_dispatch_config.py
+done_when:
+- 'ci: harness_tests'
+constraints:
+  max_lines_changed: 40
+  max_files_changed: 3
+references:
+- .harness/dispatch.yaml
+- .harness/scripts/replan.py
+notes: |
+  ## 背景（2026-09-21 取证）
+  TASK-011 因 model 行指向已下线的 OpenRouter 免费档（404）而整轮失败；
+  排查中又发现 model_fallbacks 链两条全是死的：
+    1) "nvidia/nemotron-3-super-120b-a12b:free"：openrouter provider 未配置该
+       model（dsh UNKNOWN_MODEL）；
+    2) "cohere/north-mini-code:free"：缺 provider 前缀，split_model 会解析成
+       不存在的 provider "cohere"；
+    3) 且 fallback[0] 与 primary 指向同一模型（升级退化成自回退）。
+  实测可解析且可用的组合（探针 rc=0）：
+    - primary  openrouter/cohere/north-mini-code:free
+    - fallback minimax-cn/MiniMax-M3
+
+  ## 目标
+  让 .harness/tests/test_dispatch_config.py 由红转绿：primary + fallback 的
+  每个条目都能在 dsh provider 表里解析，且链内不自回退、无重复。
+
+  ## 边界
+  - 只改 .harness/dispatch.yaml 的 model / model_fallbacks 两行。
+  - 不得修改验收测试文件（已冻结，改测试视为作弊）。
+  - 不得改动 executor_argv / concurrency / max_retries 等其它字段。
+  - 本卡不派发执行器：TASK-046 遗留的"LIVE 待模型行"由强模型直接清理。
+
+  ## 遗留（留给架构师裁定，本卡不预设）
+  - primary 仍是免费小模型；若决定以 MiniMax-M3 作全局默认，只需对调两行。
+model: minimax-cn/MiniMax-M3

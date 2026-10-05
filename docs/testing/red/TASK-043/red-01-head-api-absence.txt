@@ -1,0 +1,6 @@
+== HEAD-version dispatch/runs probe (expect all RED) ==
+RED-CONFIRMED capacity_used: module 'dispatch' has no attribute 'capacity_used'
+RED-CONFIRMED list_active: 'RunsStore' object has no attribute 'list_active'
+RED-CONFIRMED RunsStore.__init__ params at HEAD: ['self', 'path']
+RED-CONFIRMED lock_dir kwarg: RunsStore.__init__() got an unexpected keyword argument 'lock_dir'
+RED-CONFIRMED coord.py absent at HEAD

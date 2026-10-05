@@ -1,0 +1,49 @@
+id: TASK-021
+title: "沉淀 Base URL 配置错误教训（中国站与国际站子域名差异）"
+status: ready
+approver: architect
+created: 2026-09-19T00:00:00Z
+created_by: architect
+
+scope:
+  allow_write:
+    - docs/ai-workspace/rules/lessons-learned.md
+    - docs/ai-workspace/rules/lessons-index.json
+    - .harness/tasks/active/TASK-021-base-url-domain-error.yaml
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - tests/GenCollector.Tests/LessonsIndexTests.cs
+
+done_when:
+  - "ci: acceptance_tests"
+
+constraints:
+  max_lines_changed: 3
+  max_files_changed: 2
+
+depends_on: []
+
+references:
+  - .harness/rules/governance.md (规则 4 经验沉淀触发)
+  - wiki.agnes-ai.cn/zh-Hans/docs/faqs (第 2 条 Base URL)
+  - tests/GenCollector.Tests/LessonsIndexTests.cs (常驻验收测试，TASK-029 ④ 机制)
+
+notes: |
+  本任务由 2026-09-19 调试 Agnes 3.0 Flash API Key 401 问题时触发。
+  6 轮对话中模型反复用 apihub.agnes-ai.com/v1 作为中国站 Base URL，
+  实际中国站为 api.agnes-ai.cn/v1（wiki.agnes-ai.cn/zh-Hans/docs/faqs 第 2 条已确认）。
+  教训：配置类问题首轮应先查官方 FAQ/quickstart 取 Base URL，再发测试请求。
+
+  验收（TASK-029 ④ 收口修订）：acceptance_tests 指向常驻索引一致性测试
+  LessonsIndexTests.cs（过 2.3）；本卡执行 diff = 在 lessons-index.json 建/追加
+  TASK-021 条目 + 在 lessons-learned.md 追加沉淀行（均 docs/，不做 tests/ 写入）。
+  索引条目 key_conclusion 必须与 lessons 行逐字一致（机械一致性，真断言真跑）。
+  无产品代码验收需求。
+  经验条目内容已在本任务卡 notes 上方预填。

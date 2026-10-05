@@ -1,0 +1,34 @@
+id: TASK-053
+title: P4 生成器引用完整性：拒绝悬空依赖 / 归档 ID 复用 / 重复 ID 部分落盘
+status: in-progress
+created: '2026-09-21T02:04:25Z'
+created_by: strong-model
+approver: architect
+scope:
+  allow_write:
+  - .harness/scripts/gen-task-cards.py
+  - .harness/tasks/active/TASK-053.yaml
+  - docs/ai-workspace/rules/lessons-learned.md
+  deny_write:
+  # 注意：勿在此加 .harness/**（deny 优先会让上面的 allow 变死信，
+  # 卡文件自身也无法自举提交——TASK-053 曾踩，2026-09-21 修）
+  - src/**
+  - tests/**
+  - contracts/**
+  - .github/**
+  - Directory.Build.props
+  - Directory.Build.targets
+acceptance_tests:
+- .harness/tests/test_gen_task_cards_integrity.py
+- .harness/tests/test_gen_task_cards.py
+done_when:
+- 'ci: harness_tests'
+constraints:
+  max_lines_changed: 200
+  max_files_changed: 5
+notes: "## 背景\ngen-task-cards.py 在建卡时未做引用完整性校验，三个缺口已取证：\n  1) depends_on 引用不存在的 TASK-ID\
+  \ -> 照常生成（exit=0）\n  2) id 与 tasks/archive/ 中已归档的 TASK-ID 冲突 -> 照常生成（exit=0）\n \
+  \ 3) 同一清单内 id 重复 -> 报错但已写入第一张（部分落盘）\n\n## 目标\n让 test_gen_task_cards_integrity.py\
+  \ 从红转绿，且不得破坏 test_gen_task_cards.py（回归）。\n\n## 边界\n只改 .harness/scripts/gen-task-cards.py。\n\
+  不得修改任何测试文件（验收测试已冻结，改测试视为作弊）。\n不得修改接口契约。\n"
+model: minimax-cn/MiniMax-M3

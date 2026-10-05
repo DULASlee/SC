@@ -98,6 +98,29 @@
     "notes": {
       "type": "string",
       "description": "任务背景、注意事项。可引用 ADR-005 等已生效机制"
+    },
+    "model": {
+      "type": "string",
+      "minLength": 3,
+      "description": "卡自带模型（provider/model 形），覆盖全局 dispatch.yaml 的 model"
+    },
+    "skills": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "执行者可加载的 skill 列表"
+    },
+    "pipeline": {
+      "type": "boolean",
+      "description": "是否为 pipeline 子任务（owner=pipeline）"
+    },
+    "pre_approved": {
+      "type": "boolean",
+      "description": "是否已预审批通过，可跳过部分门禁"
+    },
+    "approver": {
+      "type": "string",
+      "description": "架构师审批人。触碰受保护路径的提交需覆盖卡含非空 approver",
+      "enum": ["architect"]
     }
   }
 }

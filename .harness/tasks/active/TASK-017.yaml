@@ -1,6 +1,7 @@
 id: TASK-017
 title: "修复 L3 PR scope 门禁：多卡支持 + allow/deny 冲突检测 + 铁律 12 解耦"
 status: ready
+approver: architect
 created: 2026-09-18T12:00:00Z
 created_by: architect
 scope:

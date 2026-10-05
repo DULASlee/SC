@@ -1,0 +1,5 @@
+== HEAD(044-tip) probe, expect RED ==
+RED-CONFIRMED ownership.py absent
+RED-CONFIRMED dispatch no claim
+RED-CONFIRMED poll no release
+RED-CONFIRMED hook reads sessions/ not ownership/

@@ -1,0 +1,17 @@
+@@ CI validate job 是否 continue-on-error（033 ④ 核对落盘，2026-09-19）
+
+=== 工作流文件 ===
+.github/workflows/ci.yml
+
+=== continue-on-error / allow_failure 命中（.github 全量）===
+.github/workflows/ci.yml:118:        continue-on-error: true
+.github/workflows/ci.yml:154:        # L2-B Phase 1 鏃╂湡锛氳瀵熸湡锛屼笉闃绘柇 merge锛坈ontinue-on-error: true锛夈€?.github/workflows/ci.yml:156:        # 褰撲笟鍔″眰 鈮?3 妯″潡鏈?60% 鍗曟祴鏃讹紝绉婚櫎 continue-on-error: true 骞舵彁鍗囬槇鍊笺€?.github/workflows/ci.yml:158:        continue-on-error: true
+
+=== validate-task-card 在 CI 的触发点 ===
+.github/workflows/ci.yml:171:  validate-task-cards:
+.github/workflows/ci.yml:185:        run: python .harness/scripts/validate-task-card.py --all
+
+人工判定（三选一，见 recon-list §十一）：
+  A. 是 continue-on-error → 缺口未堵，033 allow_write 加 fail-fast；R5 归因改口为'红灯结构上不可能阻断'
+  B. 非 continue-on-error 但 28c0f06 未触发 CI（本地批量提交绕过 PR）→ 缺口=绕开 CI，补 pre-receive/PR-only merge
+  C. 非 continue-on-error 且当时 CI 全绿 → validate 对未声明字段盲区=设计缺陷，升级 warn 第二道防御进 033 follow-up

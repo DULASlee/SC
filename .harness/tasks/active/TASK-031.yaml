@@ -1,0 +1,55 @@
+id: TASK-031
+title: "governance.md 事实修订（只修事实，不改规则）"
+status: ready
+approver: architect
+created: 2026-09-19T16:30:00Z
+created_by: architect
+
+scope:
+  allow_write:
+    - .harness/rules/governance.md
+    - .harness/tasks/active/TASK-031.yaml
+    - docs/ai-workspace/rules/lessons-learned.md
+    - docs/testing/red/TASK-031/**
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+acceptance_tests:
+  - tests/ArchitectureTests/ArchitectureTests.csproj
+
+done_when:
+  - "ci: build"
+  - "ci: contract_consistency"
+
+constraints:
+  max_lines_changed: 120
+  max_files_changed: 5
+
+depends_on: []
+
+references:
+  - docs/testing/red/TASK-024/scan-report.md (C4 残留项：governance.md:24 失实陈述)
+
+notes: |
+  架构师 024 裁定②：governance.md 失实陈述另开治理修订卡，只修事实。
+  已知失实点（024 scan-report 记录在案）：
+  - governance.md:24「pre-commit hook（.harness/scripts/check-protected-paths.py）会拦截
+    超出 scope 的文件修改」——check-protected-paths.py 已随 024 C4 删除；现行事实：
+    超 scope 拦截由 pre-commit 步骤 3 check-local-scope.py 承担，
+    受保护路径判定由 commit-msg hook + check_approval.py 承担（纯 path 判定，023 模型）。
+  施工边界：
+  1. 全文件扫描 governance.md 中 023/024 后的失实陈述（EXEMPT 前缀、[APPROVED-BY]
+     旧语义、已删脚本引用、状态机/归档描述与现行为的偏差），逐条对码取证；
+  2. 只改失实陈述，不改任何规则语义（铁律映射、豁免记录表格式、规则 1-5 本体不动）；
+  3. 若扫描发现需改规则语义或新增规则的项 → 停手报告架构师，不在本卡内扩面；
+  4. 证据入 docs/testing/red/TASK-031/（grep 零残留 + 逐条修改前后对照）。
+  验收（022 先例）：acceptance_tests = 真实可跑工程（ArchitectureTests，dotnet test 3/3）。
+  closeout（架构师 2026-09-19 裁定 R1-C：实施落地即归档，裁定非自报）：
+  governance.md 事实修订落地 @0152d7f（唯一 A 类 L24：拦截工具失实陈述 → 现行模型，
+  1 行 diff，规则语义未变；B 类 0 / C 类 0，未触发另开治理修订卡条件）。
+  过程记录 docs/testing/red/TASK-031/process-record.md（022 基准核验 + 逐条 A/B/C 处理清单）。

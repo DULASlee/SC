@@ -46,7 +46,7 @@ def resolve_ref(ref: str, root_yaml_path: Path):
         file_part, frag = ref, ""
     target = (root_yaml_path.parent / file_part).resolve()
     if not target.exists():
-        return None, f"$ref 文件不存在: {target}"
+        return None, f"$ref target file not found: {target}"
     node = load(target)
     if frag.startswith("/"):
         for part in frag.lstrip("/").split("/"):
@@ -65,12 +65,12 @@ def main() -> int:
         try:
             load(p)
         except Exception as e:
-            errors.append(f"JSON 非法: {p.name} — {e}")
+            errors.append(f"JSON invalid: {p.name} - {e}")
 
     # 2. openapi.yaml 合法 + $ref 可解析
     openapi_path = CONTRACTS / "openapi.yaml"
     if not openapi_path.exists():
-        print(f"❌ {openapi_path} 不存在"); return 2
+        print(f"[FAIL] openapi.yaml not found: {openapi_path}"); return 2
     try:
         spec = load(openapi_path)
     except Exception as e:

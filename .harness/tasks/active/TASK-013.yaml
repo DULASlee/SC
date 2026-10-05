@@ -1,6 +1,7 @@
 id: TASK-013
 title: "治理收尾：governance.md + hooks wrapper 冒烟 + CI paths filter"
 status: ready
+approver: architect
 created: 2026-09-18T00:00:00Z
 created_by: architect
 scope:

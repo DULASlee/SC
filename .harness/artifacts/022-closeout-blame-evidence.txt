@@ -1,0 +1,25 @@
+# 022 closeout — approver 回填时点证据（git log -S 原始结果落盘）
+
+生成: 2026-09-19 (022 closeout, b5809a2 起)
+方法: git log --oneline -S''<字段>'' 定位引入 commit；created 与 approver 分属不同 commit = 回填。
+
+@@TASK-008
+  文件: F:\JQKJ\.harness\tasks\active\TASK-008.yaml
+  created 行值: created: 2026-09-18T00:00:00Z
+  created 行引入 commit: b973475 feat(harness): TASK-008 lessons-learned mechanism + 閾佸緥 14
+  approver 行引入 commit: 28c0f06 TASK-023: E1 绉婚櫎鈥斺€斾繚鎶ら棬绾?path 鍒ゅ畾 + 鏈哄櫒鍐欏叆鐐硅嚜瑕嗙洊濂戠害 [APPROVED-BY: 鏋舵瀯甯圿
+  结论: approver 写入(28c0f06 TASK-023: E1 绉婚櫎鈥斺€斾繚鎶ら棬绾?path 鍒ゅ畾 + 鏈哄櫒鍐欏叆鐐硅嚜瑕嗙洊濂戠害 [APPROVED-BY: 鏋舵瀯甯圿[0]) 晚于 created 引入(b973475 feat(harness): TASK-008 lessons-learned mechanism + 閾佸緥 14[0]) = 回填，非推断值
+
+@@TASK-013
+  文件: F:\JQKJ\.harness\tasks\active\TASK-013.yaml
+  created 行值: created: 2026-09-18T00:00:00Z
+  created 行引入 commit: 1fe6c31 chore(governance): TASK-013 governance.md + hooks wrapper + CI paths filter
+  approver 行引入 commit: 28c0f06 TASK-023: E1 绉婚櫎鈥斺€斾繚鎶ら棬绾?path 鍒ゅ畾 + 鏈哄櫒鍐欏叆鐐硅嚜瑕嗙洊濂戠害 [APPROVED-BY: 鏋舵瀯甯圿
+  结论: approver 写入(28c0f06 TASK-023: E1 绉婚櫎鈥斺€斾繚鎶ら棬绾?path 鍒ゅ畾 + 鏈哄櫒鍐欏叆鐐硅嚜瑕嗙洊濂戠害 [APPROVED-BY: 鏋舵瀯甯圿[0]) 晚于 created 引入(1fe6c31 chore(governance): TASK-013 governance.md + hooks wrapper + CI paths filter[0]) = 回填，非推断值
+
+@@TASK-017
+  文件: F:\JQKJ\.harness\tasks\active\TASK-017.yaml
+  created 行值: created: 2026-09-18T12:00:00Z
+  created 行引入 commit: 0f939fd fix(ci): repair L3 PR scope gate conflicts (TASK-017)
+  approver 行引入 commit: 28c0f06 TASK-023: E1 绉婚櫎鈥斺€斾繚鎶ら棬绾?path 鍒ゅ畾 + 鏈哄櫒鍐欏叆鐐硅嚜瑕嗙洊濂戠害 [APPROVED-BY: 鏋舵瀯甯圿
+  结论: approver 写入(28c0f06 TASK-023: E1 绉婚櫎鈥斺€斾繚鎶ら棬绾?path 鍒ゅ畾 + 鏈哄櫒鍐欏叆鐐硅嚜瑕嗙洊濂戠害 [APPROVED-BY: 鏋舵瀯甯圿[0]) 晚于 created 引入(0f939fd fix(ci): repair L3 PR scope gate conflicts (TASK-017)[0]) = 回填，非推断值

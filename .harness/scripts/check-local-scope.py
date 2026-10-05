@@ -88,18 +88,18 @@ def main() -> int:
     if args.task_id:
         card_path = TASKS_DIR / f"{args.task_id}.yaml"
         if not card_path.exists():
-            print(f"[FAIL] 任务卡不存在：{card_path}")
+            print(f"[FAIL] task card not found: {card_path}")
             return 1
         with open(card_path, encoding="utf-8") as f:
             card = yaml.safe_load(f)
     else:
         card_path, card = find_active_task()
         if not card:
-            print("[WARN] 无唯一的活动任务卡（0 或 >= 2 个 ready/in-progress），跳过 scope 检查")
-            print("       业务代码提交请显式 --task-id TASK-XXX")
+            print("[WARN] no unique active task card (0 or >= 2 ready/in-progress), skipping scope check")
+            print("       for business code commits pass --task-id TASK-XXX explicitly")
             return 0
 
-    print(f"[INFO] 使用任务卡：{card_path.name}（status: {card.get('status')}）")
+    print(f"[INFO] using task card: {card_path.name} (status: {card.get('status')})")
 
     allow = card["scope"]["allow_write"]
     deny = card["scope"]["deny_write"]
@@ -110,32 +110,36 @@ def main() -> int:
     lines = get_staged_lines()
 
     if not files:
-        print("[WARN] 无 staged 变更")
+        print("[WARN] no staged changes")
         return 0
 
     violations = []
     for f in files:
         if match_any(f, deny):
-            violations.append(f"[DENY] {f} 触碰 deny_write")
+            violations.append(f"[DENY] {f} touches deny_write")
         elif not match_any(f, allow):
-            violations.append(f"[OUT-OF-SCOPE] {f} 不在 allow_write 内")
+            violations.append(f"[OUT-OF-SCOPE] {f} outside allow_write")
 
     if violations:
-        print(f"\n[FAIL] 发现 {len(violations)} 处 scope 违规：")
+        print(f"\n[FAIL] {len(violations)} scope violation(s):")
         for v in violations:
             print(f"  - {v}")
-        print("\n修复方式：将变更限制在任务卡 allow_write 范围内，或申请新任务卡。")
-        print("提示：.github/、tests/、.harness/ 等受保护路径由 commit-msg hook + check-protected-paths.py 独立拦截（需 APPROVED-BY）。")
+        print("\nFix: limit changes to the card allow_write, or open a new task card.")
+        # TASK-024 C2: 现行模型——受保护路径由 commit-msg hook + check_approval.py
+        # 判定（覆盖卡 allow_write + 非空 approver），[APPROVED-BY]/豁免前缀旧语义已作废。
+        print("Note: protected paths (.github/, tests/, .harness/, ...) are enforced by the "
+              "commit-msg hook + check_approval.py: an active card whose allow_write covers "
+              "the file with a non-empty approver field, or architect sets SKIP_PROTECTED_CHECK=1.")
         return 1
 
     if len(files) > max_files:
-        print(f"[FAIL] 文件数 {len(files)} 超过限制 {max_files}")
+        print(f"[FAIL] file count {len(files)} exceeds limit {max_files}")
         return 1
     if lines > max_lines:
-        print(f"[FAIL] 变更行数 {lines} 超过限制 {max_lines}")
+        print(f"[FAIL] changed lines {lines} exceed limit {max_lines}")
         return 1
 
-    print(f"[OK] scope 检查通过：{len(files)} 文件，{lines} 行")
+    print(f"[OK] scope check passed: {len(files)} file(s), {lines} line(s)")
     return 0
 
 

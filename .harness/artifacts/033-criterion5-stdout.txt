@@ -1,0 +1,7 @@
+# 033 判据5 故意违规 — 原始输出落盘
+
+## 修复前（schema 未声明 approver，A2 应 FAIL）
+[OK] F:\JQKJ\docs\testing\red\TASK-033\criterion5.md
+
+## 修复后（approver 入 schema+enum，A2/C PASS）
+见 criterion5.md（同 commit cd5b7d3）+ 本文件 A3 补充：approver=strong-model 应 FAIL（6bf56b2）。

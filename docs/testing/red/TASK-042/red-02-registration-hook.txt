@@ -1,0 +1,85 @@
+EEEEE
+======================================================================
+ERROR: test_active_registration_passes (tests.test_check_session_registration.TestCheckRegistration.test_active_registration_passes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 95, in test_active_registration_passes
+    eng = self._engine()
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 72, in _engine
+    return load_script("check_session_registration")
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 24, in load_script
+    spec.loader.exec_module(mod)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "<frozen importlib._bootstrap_external>", line 755, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 892, in get_code
+  File "<frozen importlib._bootstrap_external>", line 950, in get_data
+FileNotFoundError: [Errno 2] No such file or directory: 'F:\\JQKJ\\docs\\ai-workspace\\hooks\\check_session_registration.py'
+
+======================================================================
+ERROR: test_main_tree_always_passes (tests.test_check_session_registration.TestCheckRegistration.test_main_tree_always_passes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 75, in test_main_tree_always_passes
+    eng = self._engine()
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 72, in _engine
+    return load_script("check_session_registration")
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 24, in load_script
+    spec.loader.exec_module(mod)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "<frozen importlib._bootstrap_external>", line 755, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 892, in get_code
+  File "<frozen importlib._bootstrap_external>", line 950, in get_data
+FileNotFoundError: [Errno 2] No such file or directory: 'F:\\JQKJ\\docs\\ai-workspace\\hooks\\check_session_registration.py'
+
+======================================================================
+ERROR: test_path_normalization_windows_case (tests.test_check_session_registration.TestCheckRegistration.test_path_normalization_windows_case)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 131, in test_path_normalization_windows_case
+    eng = self._engine()
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 72, in _engine
+    return load_script("check_session_registration")
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 24, in load_script
+    spec.loader.exec_module(mod)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "<frozen importlib._bootstrap_external>", line 755, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 892, in get_code
+  File "<frozen importlib._bootstrap_external>", line 950, in get_data
+FileNotFoundError: [Errno 2] No such file or directory: 'F:\\JQKJ\\docs\\ai-workspace\\hooks\\check_session_registration.py'
+
+======================================================================
+ERROR: test_released_registration_fails (tests.test_check_session_registration.TestCheckRegistration.test_released_registration_fails)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 113, in test_released_registration_fails
+    eng = self._engine()
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 72, in _engine
+    return load_script("check_session_registration")
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 24, in load_script
+    spec.loader.exec_module(mod)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "<frozen importlib._bootstrap_external>", line 755, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 892, in get_code
+  File "<frozen importlib._bootstrap_external>", line 950, in get_data
+FileNotFoundError: [Errno 2] No such file or directory: 'F:\\JQKJ\\docs\\ai-workspace\\hooks\\check_session_registration.py'
+
+======================================================================
+ERROR: test_unregistered_worktree_fails (tests.test_check_session_registration.TestCheckRegistration.test_unregistered_worktree_fails)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 83, in test_unregistered_worktree_fails
+    eng = self._engine()
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 72, in _engine
+    return load_script("check_session_registration")
+  File "F:\JQKJ\.harness\tests\test_check_session_registration.py", line 24, in load_script
+    spec.loader.exec_module(mod)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "<frozen importlib._bootstrap_external>", line 755, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 892, in get_code
+  File "<frozen importlib._bootstrap_external>", line 950, in get_data
+FileNotFoundError: [Errno 2] No such file or directory: 'F:\\JQKJ\\docs\\ai-workspace\\hooks\\check_session_registration.py'
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.003s
+
+FAILED (errors=5)

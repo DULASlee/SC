@@ -9,18 +9,18 @@ cd "$REPO_ROOT"
 # shellcheck disable=SC1091
 source .githooks/lib/common.sh
 
-echo "=== pre-push 门禁 ==="
+echo "=== pre-push gate ==="
 
 # 0. 分支规则（架构师决定：取消 PR 强制流程，改为个人 + AI 辅助开发模式）
 #    不再禁止直推 main/develop。质量仍由每次 push 后的 CI 保障（编译/测试/架构），
 #    红灯为"提醒"而非"阻止 push"。feat/*|fix/* 仅做非阻断的验收记录提示。
-remote="$1"  # pre-push hook 第 1 参数是 remote 名（origin）
+remote="$1"  # pre-push hook arg 1: remote name (origin)
 if [ "$remote" = "origin" ]; then
     while read local_ref local_sha remote_ref remote_sha; do
         branch="${remote_ref#refs/heads/}"
         case "$branch" in
             feat/*|fix/*)
-                info "推送到 $branch：若为任务交付，验收记录可归档到 .harness/tasks/（不阻断）"
+                info "pushing to $branch: for task delivery, archive acceptance records to .harness/tasks/ (non-blocking)"
                 ;;
         esac
     done
@@ -34,30 +34,30 @@ for proj in tests/GenCollector.Tests/GenCollector.Tests.csproj tests/GenDashboar
     else
         args=( "$proj" -c Release --no-build --nologo -v quiet )
     fi
-    dotnet test "${args[@]}" || fail "全测试失败：$proj"
+    dotnet test "${args[@]}" || fail "full test run failed: $proj"
 done
 
 # 2. 覆盖率差分（如果存在脚本）
 if [ -f "scripts/check-coverage-diff.sh" ]; then
-    bash scripts/check-coverage-diff.sh || warn "覆盖率差分未通过（观察期）"
+    bash scripts/check-coverage-diff.sh || warn "coverage diff failed (observation period, non-blocking)"
 else
-    info "coverage-diff 脚本不存在，跳过（L2-B partial 阶段未启用）"
+    info "coverage-diff script not found, skipping (L2-B partial stage not enabled)"
 fi
 
 # 3. 变异测试（如果配置存在）
 if [ -f "stryker-config.json" ]; then
-    info "变异测试为观察期，跳过阻断（L2-B 阶段，break=15）"
+    info "mutation testing in observation period, blocking skipped (L2-B stage, break=15)"
 else
-    info "stryker-config.json 不存在，跳过变异测试"
+    info "stryker-config.json not found, skipping mutation testing"
 fi
 
 # 4. 可靠性工具链（仅在 Docker daemon 可用时跑）
 if command -v docker > /dev/null 2>&1 && docker info > /dev/null 2>&1; then
-    info "检测到 Docker daemon，运行可靠性工具链"
+    info "Docker daemon detected, running reliability toolchain"
     dotnet test tests/ReliabilityTests/ReliabilityTests.csproj -c Release --no-build --nologo -v quiet \
-        || warn "可靠性工具链未通过（观察期）"
+        || warn "reliability toolchain failed (observation period)"
 else
-    info "本地无 Docker daemon，跳过 ReliabilityTests（架构师 §五 允许降级）"
+    info "no Docker daemon locally, skipping ReliabilityTests (architect sec.5 permits downgrade)"
 fi
 
-ok "pre-push 全部通过"
+ok "pre-push all passed"

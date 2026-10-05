@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"F:/JQKJ/docs/ai-workspace/hooks/scripts/codebuddy-stop-normalize.py\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
