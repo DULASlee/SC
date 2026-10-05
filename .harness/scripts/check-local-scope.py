@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -27,7 +28,9 @@ from pathlib import Path
 import yaml
 
 HARNESS_DIR = Path(__file__).resolve().parent.parent
-TASKS_DIR = HARNESS_DIR / "tasks" / "active"
+TASKS_DIR = (Path(os.environ["HARNESS_TASKS_DIR"]).resolve()
+             if os.environ.get("HARNESS_TASKS_DIR") else
+             HARNESS_DIR / "tasks" / "active")
 
 
 def glob_to_regex(pattern: str) -> re.Pattern:
@@ -95,9 +98,44 @@ def main() -> int:
     else:
         card_path, card = find_active_task()
         if not card:
-            print("[WARN] no unique active task card (0 or >= 2 ready/in-progress), skipping scope check")
-            print("       for business code commits pass --task-id TASK-XXX explicitly")
-            return 0
+            # isolation-revision F4: resolve by staged files instead of
+            # skipping. Exactly one covering card -> use it; else FAIL
+            # (transition: HARNESS_LENIENT_SCOPE=1 keeps old warn-skip).
+            import os
+            staged_early = get_staged_files()
+            if not staged_early:
+                print("[WARN] no staged changes")
+                return 0
+            matches = []
+            for cp in TASKS_DIR.glob("TASK-*.yaml"):
+                try:
+                    with open(cp, encoding="utf-8") as f:
+                        data = yaml.safe_load(f)
+                except Exception:
+                    continue
+                if (data.get("status") not in ("ready", "in-progress")
+                        or not staged_early):
+                    continue
+                allow = ((data.get("scope") or {}).get("allow_write")) or []
+                deny = ((data.get("scope") or {}).get("deny_write")) or []
+                if any(match_any(x, deny) for x in staged_early):
+                    continue
+                if all(match_any(x, allow) for x in staged_early):
+                    matches.append((cp, data))
+            if len(matches) == 1:
+                card_path, card = matches[0]
+                print(f"[INFO] resolved covering card: {card_path.name}")
+            else:
+                if os.environ.get("HARNESS_LENIENT_SCOPE") == "1":
+                    print("[WARN] no unique covering task card "
+                          f"({len(matches)} candidates), skipping scope check "
+                          "(lenient transition)")
+                    return 0
+                print("[FAIL] no unique covering task card "
+                      f"({len(matches)} candidates for {len(staged_early)} "
+                      "staged file(s)): pass --task-id TASK-XXX explicitly "
+                      "or open a card covering these files")
+                return 1
 
     print(f"[INFO] using task card: {card_path.name} (status: {card.get('status')})")
 

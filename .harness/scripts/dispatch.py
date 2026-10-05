@@ -12,6 +12,7 @@ start-task.py 生成上下文 → run-exec.py 拉起 headless 会话 → 记 RUN
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -192,9 +193,20 @@ def write_skills_file(task_id: str, skill_names: list[str],
     return sp
 
 
-def ensure_worktree(task_id: str, repo_root: Path, wt_root: Path) -> Path:
+def ensure_worktree(task_id: str, repo_root: Path, wt_root: Path,
+                    runs_dir: Path | None = None,
+                    owner_session_id: str | None = None) -> Path:
+    """isolation-revision F8: existing dir is reused only after an
+    ownership check -- refused when another live session holds it."""
     wt = wt_root / task_id
     if wt.exists():
+        if runs_dir is not None and owner_session_id is not None:
+            import ownership as _own
+            rec = _own.worktree_owner(runs_dir, wt)
+            if rec and rec.get("owner_session_id") != owner_session_id:
+                raise RuntimeError(
+                    f"{task_id} worktree 被他会话持有 "
+                    f"(owner={rec.get('owner_session_id')})，拒绝复用")
         return wt
     branch = f"feat/{task_id}"
     code, _, _ = run(["git", "rev-parse", "--verify", branch], cwd=repo_root)
@@ -251,7 +263,8 @@ def spawn_attempt(task_id: str, card: dict, cfg: dict, store: RunsStore,
     使 dispatch 首轮与 poll 重试轮可共用同一套 spawn 逻辑。
     """
     attempt = store.attempts(task_id) + 1
-    wt = ensure_worktree(task_id, REPO_ROOT, REPO_ROOT / cfg["worktree_root"])
+    wt = ensure_worktree(task_id, REPO_ROOT, REPO_ROOT / cfg["worktree_root"],
+                         REPO_ROOT / cfg["runs_dir"], f"{owner}:{task_id}")
     check_worktree_gate(wt, task_id, attempt)
     code, _, err = run(
         [sys.executable, str(SCRIPTS_DIR / "start-task.py"), task_id],
@@ -292,7 +305,9 @@ def spawn_attempt(task_id: str, card: dict, cfg: dict, store: RunsStore,
     try:
         proc = subprocess.Popen(
             [sys.executable, str(SCRIPTS_DIR / "run-exec.py"),
-             "--run-dir", str(run_dir), "--", *argv],
+             "--run-dir", str(run_dir),
+             "--session-id", f"{owner}:{task_id}",
+             "--", *argv],
             cwd=wt)
     except Exception:
         try:
@@ -379,6 +394,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--max-tasks", type=int, default=None)
+    ap.add_argument("--task", default=None,
+                    help="只派发指定 TASK-ID（缺省派发全部合格卡）")
     args = ap.parse_args()
 
     cfg = load_config()
@@ -402,6 +419,8 @@ def main() -> int:
     queue: list[tuple[Path, dict]] = []
     for card_path in sorted(ACTIVE_DIR.glob("TASK-*.yaml")):
         card = load_card(card_path)
+        if args.task and card.get("id") != args.task:
+            continue
         if not is_eligible(card, REPO_ROOT):
             continue
         if not card_validates(card_path):
@@ -439,24 +458,28 @@ def main() -> int:
                 print(f"[SKIP] {tid} 卡态已被并发占用 "
                       f"(status={live.get('status')})，跳过")
                 continue
-            try:
-                claim_card(card_path, tid)
-            except Exception as exc:  # noqa: BLE001  占坑失败已内部回滚，跳过本卡
-                print(f"[FAIL] {tid} 占坑失败，跳过：{exc}")
-                continue
-            # TASK-045：commit 之后记 ownership（§13 序）；已有主=拒绝并回滚卡
+            # isolation-revision F2: claim BEFORE card commit, so our own
+            # claim commit carries an ownership trail for the main-tree
+            # gate. Conflict now skips with the card untouched (cleaner
+            # than commit-then-rollback).
             own_sid = f"dispatch:{tid}"
+            os.environ["HARNESS_SESSION_ID"] = own_sid
             try:
                 ownership.claim(
                     runs_dir, tid, own_sid,
                     str(REPO_ROOT / cfg["worktree_root"] / tid))
             except ownership.OwnershipConflict as exc:
                 print(f"[SKIP] {tid} 已有主，拒绝双目录执行：{exc}")
+                continue
+            try:
+                claim_card(card_path, tid)
+            except Exception as exc:  # noqa: BLE001  占坑失败已内部回滚，
+                # 释放刚拿到的归属再跳过本卡
+                print(f"[FAIL] {tid} 占坑失败，释放归属并跳过：{exc}")
                 try:
-                    commit_card_status(card_path, tid, "ready",
-                                       "ownership 冲突回滚")
+                    ownership.release(runs_dir, tid, own_sid)
                 except Exception as exc2:  # noqa: BLE001
-                    print(f"[WARN] {tid} 回滚到 ready 失败，需人工处理：{exc2}")
+                    print(f"[WARN] {tid} 归属释放失败，需人工处理：{exc2}")
                 continue
             touch(runs_dir)  # claim 含 git 提交（慢），刷心跳再派发
             try:
