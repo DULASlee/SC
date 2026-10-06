@@ -24,6 +24,12 @@ class TestPoll(unittest.TestCase):
         poll = load("poll.py")
         self.assertFalse(poll.pid_alive(999999))
 
+    def test_pid_alive_true_for_self(self):
+        """isolation-revision 根因修：跨平台分支必须双向可验。"""
+        import os
+        poll = load("poll.py")
+        self.assertTrue(poll.pid_alive(os.getpid()))
+
     def test_scope_check_rejects_deny_write(self):
         poll = load("poll.py")
         card = {"scope": {"allow_write": ["mod/**"],
