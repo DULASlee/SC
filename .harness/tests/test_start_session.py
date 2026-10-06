@@ -91,7 +91,9 @@ class TestStartSession(unittest.TestCase):
             with self.assertRaises(RuntimeError) as ctx:
                 ss.create_session(root, "TASK-901", owner="b",
                                   with_context=False, claim_card=False)
-            self.assertIn("already", str(ctx.exception).lower())
+            # F8: refusal now happens at worktree reuse (earlier and
+            # clearer than the claim conflict); either wording refuses.
+            self.assertIn("拒绝", str(ctx.exception))
 
     def test_card_in_progress_refused(self):
         ss = load_script("start-session")

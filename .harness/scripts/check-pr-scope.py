@@ -142,7 +142,7 @@ def extract_task_ids(text):
 
 
 # 只有这些状态的卡才有资格作为 PR 的授权卡
-DELIVERABLE_STATUSES = {"ready", "in_progress"}
+DELIVERABLE_STATUSES = {"ready", "in-progress"}
 
 
 def load_task_card(task_id):

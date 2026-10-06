@@ -1,0 +1,63 @@
+id: TASK-056
+title: "并行隔离段修订 F1-F9：归属三口子、放水变严、体检进云端"
+status: in-progress
+created: '2026-10-05T16:00:00Z'
+created_by: strong-model
+approver: architect
+scope:
+  allow_write:
+  - .harness/scripts/check_session_registration.py
+  - .harness/scripts/check-cloud-ownership.py
+  - .harness/scripts/check-local-scope.py
+  - .harness/scripts/check-pr-scope.py
+  - .harness/scripts/dispatch.py
+  - .harness/scripts/run-exec.py
+  - .harness/scripts/start-session.py
+  - .harness/scripts/verify-all.py
+  - .harness/tests/test_check_session_registration.py
+  - .harness/tests/test_check_local_scope.py
+  - .harness/tests/test_check_pr_scope.py
+  - .harness/tests/test_dispatch.py
+  - .harness/tests/test_start_session.py
+  - .harness/tests/test_hygiene_regression.py
+  - .harness/tasks/active/TASK-056.yaml
+  - .github/workflows/ci.yml
+  - IoTPlatform.sln
+  - tests/IoTPlatform.Core.Tests/IoTPlatform.Core.Tests.csproj
+  - docs/ai-workspace/hooks/check_session_registration.py
+  - docs/ai-workspace/hooks/pre-push
+  - docs/superpowers/spec/2026-10-05-parallel-isolation-revision-spec-v1.0.md
+  - docs/superpowers/splan/2026-10-05-parallel-isolation-revision-splan-v1.0.md
+  - docs/testing/red/TASK-046/f5-command-reconciliation.md
+  - docs/testing/red/TASK-046/t10-live-deferral.md
+  deny_write:
+  - src/**
+  - tests/GenCollector.Tests/**
+  - tests/GenDashboard.Tests/**
+  - contracts/**
+  - Directory.Build.props
+  - Directory.Build.targets
+acceptance_tests:
+- .harness/tests/test_check_session_registration.py
+- .harness/tests/test_check_local_scope.py
+- .harness/tests/test_dispatch.py
+- .harness/tests/test_start_session.py
+- .harness/tests/test_hygiene_regression.py
+done_when:
+- 'ci: harness_tests'
+- 'ci: architecture_tests'
+constraints:
+  max_lines_changed: 1400
+  max_files_changed: 30
+references:
+- docs/superpowers/spec/2026-10-05-parallel-isolation-revision-spec-v1.0.md
+- docs/项目harness工程构建/1、多会话并行模块/1、多会话并行harness工程技术架构和核心功能技术手册.md
+notes: |
+  ## 背景
+  2026-10-05 隔离段审计定位三处结构性口子（归属不验身份、主树无条件
+  放行、绕过钩子无技术对抗）与两处放水（多卡跳过、命令漂移），owner
+  明确要求存量修订、不重建，全绿自动合入为终态。
+  ## 边界
+  - 只改隔离段门禁与脚本；不改卡字段、状态机、分支命名、双账本结构。
+  - T10 线上点火因模型线路记顺延（见 t10-live-deferral.md）。
+  - 门禁类变更过渡期先告警（HARNESS_STRICT_IDENTITY / LENIENT 开关）。
