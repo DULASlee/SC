@@ -9,18 +9,21 @@ scope:
   - .harness/scripts/check_session_registration.py
   - .harness/scripts/check-cloud-ownership.py
   - .harness/scripts/check-local-scope.py
+  - .harness/scripts/check-pr-scope.py
   - .harness/scripts/dispatch.py
   - .harness/scripts/run-exec.py
   - .harness/scripts/start-session.py
   - .harness/scripts/verify-all.py
   - .harness/tests/test_check_session_registration.py
   - .harness/tests/test_check_local_scope.py
+  - .harness/tests/test_check_pr_scope.py
   - .harness/tests/test_dispatch.py
   - .harness/tests/test_start_session.py
   - .harness/tests/test_hygiene_regression.py
   - .harness/tasks/active/TASK-056.yaml
   - .github/workflows/ci.yml
   - IoTPlatform.sln
+  - tests/IoTPlatform.Core.Tests/IoTPlatform.Core.Tests.csproj
   - docs/ai-workspace/hooks/check_session_registration.py
   - docs/ai-workspace/hooks/pre-push
   - docs/superpowers/spec/2026-10-05-parallel-isolation-revision-spec-v1.0.md
