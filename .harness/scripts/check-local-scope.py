@@ -48,16 +48,19 @@ def match_any(path: str, patterns: list[str]) -> bool:
 
 def get_staged_files() -> list[str]:
     result = subprocess.run(
-        ["git", "diff", "--cached", "--name-only"],
+        ["git", "-c", "core.quotepath=off", "diff", "--cached",
+         "--name-only"],
         capture_output=True, text=True, check=True,
+        encoding="utf-8", errors="replace",
     )
     return [f for f in result.stdout.strip().split("\n") if f]
 
 
 def get_staged_lines() -> int:
     result = subprocess.run(
-        ["git", "diff", "--cached", "--numstat"],
+        ["git", "-c", "core.quotepath=off", "diff", "--cached", "--numstat"],
         capture_output=True, text=True, check=True,
+        encoding="utf-8", errors="replace",
     )
     total = 0
     for line in result.stdout.strip().split("\n"):

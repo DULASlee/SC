@@ -76,6 +76,18 @@ class TestLocalScopeResolution(unittest.TestCase):
             rc, out = run_script(root)
             self.assertEqual(rc, 1, out)
 
+    def test_cjk_filename_matched_unescaped(self):
+        """quotepath off: 中文名不得被八进制转义挡在范围外。"""
+        with TemporaryDirectory() as tmp:
+            root = make_repo(tmp, [("TASK-001", '"docs/*"')])
+            (root / "docs" / "设计规格-v1.0.md").parent.mkdir(
+                parents=True, exist_ok=True)
+            (root / "docs" / "设计规格-v1.0.md").write_text(
+                "x", encoding="utf-8")
+            git("add", "docs/设计规格-v1.0.md", cwd=root)
+            rc, out = run_script(root)
+            self.assertEqual(rc, 0, out)
+
     def test_no_covering_card_fails(self):
         with TemporaryDirectory() as tmp:
             root = make_repo(tmp, [("TASK-001", '"src/A.cs"'),

@@ -32,6 +32,7 @@ scope:
   - docs/superpowers/plan/2026-10-05-parallel-isolation-revision-splan-v1.0.md
   - docs/superpowers/plan/*
   - docs/superpowers/spec/*
+  - docs/superpowers/splan/*
   - docs/superpowers/reports/2026-09-17-decompile-analysis.md
   - docs/ai-workspace/skills/superpowers/README.md
   - docs/ai-workspace/skills/superpowers/brainstorming/SKILL.md

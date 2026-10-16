@@ -67,16 +67,20 @@ def match_patterns(path, patterns):
 
 def get_changed_files(base_ref):
     result = subprocess.run(
-        ["git", "diff", "--name-only", f"{base_ref}...HEAD"],
+        ["git", "-c", "core.quotepath=off", "diff", "--name-only",
+         f"{base_ref}...HEAD"],
         capture_output=True, text=True, check=True,
+        encoding="utf-8", errors="replace",
     )
     return [f for f in result.stdout.strip().split("\n") if f]
 
 
 def get_changed_lines(base_ref):
     result = subprocess.run(
-        ["git", "diff", "--numstat", f"{base_ref}...HEAD"],
+        ["git", "-c", "core.quotepath=off", "diff", "--numstat",
+         f"{base_ref}...HEAD"],
         capture_output=True, text=True, check=True,
+        encoding="utf-8", errors="replace",
     )
     total = 0
     for line in result.stdout.strip().split("\n"):
