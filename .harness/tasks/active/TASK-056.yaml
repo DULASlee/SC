@@ -11,6 +11,7 @@ scope:
   - .harness/scripts/check-local-scope.py
   - .harness/scripts/check-pr-scope.py
   - .harness/scripts/dispatch.py
+  - .harness/scripts/poll.py
   - .harness/scripts/run-exec.py
   - .harness/scripts/start-session.py
   - .harness/scripts/verify-all.py
@@ -20,6 +21,7 @@ scope:
   - .harness/tests/test_dispatch.py
   - .harness/tests/test_start_session.py
   - .harness/tests/test_hygiene_regression.py
+  - .harness/tests/test_poll.py
   - .harness/tasks/active/TASK-056.yaml
   - .github/workflows/ci.yml
   - IoTPlatform.sln
