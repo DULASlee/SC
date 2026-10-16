@@ -29,7 +29,20 @@ scope:
   - docs/ai-workspace/hooks/check_session_registration.py
   - docs/ai-workspace/hooks/pre-push
   - docs/superpowers/spec/2026-10-05-parallel-isolation-revision-spec-v1.0.md
-  - docs/superpowers/splan/2026-10-05-parallel-isolation-revision-splan-v1.0.md
+  - docs/superpowers/plan/2026-10-05-parallel-isolation-revision-splan-v1.0.md
+  - docs/superpowers/plan/*
+  - docs/superpowers/spec/*
+  - docs/superpowers/reports/2026-09-17-decompile-analysis.md
+  - docs/ai-workspace/skills/superpowers/README.md
+  - docs/ai-workspace/skills/superpowers/brainstorming/SKILL.md
+  - docs/ai-workspace/skills/superpowers/requesting-code-review/SKILL.md
+  - docs/ai-workspace/skills/superpowers/subagent-driven-development/SKILL.md
+  - docs/ai-workspace/skills/superpowers/writing-plans/SKILL.md
+  - docs/architecture/adr/ADR-0005-Compaction-Threshold-Keep-0.2-Over-0.7.md
+  - docs/reports/2026-09-20-parallel-session-plan-review.md
+  - docs/testing/red/TASK-024/scan-report.md
+  - docs/项目harness工程构建/harness工程构建母本.md
+  - AGENTS.md
   - docs/testing/red/TASK-046/f5-command-reconciliation.md
   - docs/testing/red/TASK-046/t10-live-deferral.md
   deny_write:

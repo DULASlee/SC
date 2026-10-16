@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.14 标准库 + `pyyaml` + `jsonschema`（仓库现有脚本已在用，不新增任何依赖）；测试用标准库 `unittest`（`python -m unittest discover -s .harness/tests -t .`）；执行器用已验证的 `dsh --profile headless`（工作目录 = 任务 worktree）。
 
-**Plan file location note:** 本仓库既有规划统一放在 `docs/superpowers/plans/`（已有 4 篇先例），skill 默认的 `docs/superpowers/plans/` 与之恰好一致，采用现有惯例。
+**Plan file location note:** 本仓库既有规划统一放在 `docs/superpowers/plan/`（已有 4 篇先例），skill 默认的 `docs/superpowers/plan/` 与之恰好一致，采用现有惯例。
 
 ---
 
@@ -1142,7 +1142,7 @@ git commit -m "docs(harness): dispatch MVP 运行手册 [APPROVED-BY: 项目负�
 
 ---
 
-Plan complete and saved to `docs/superpowers/plans/2026-09-19-harness-dispatch-mvp.md`. Two execution options:
+Plan complete and saved to `docs/superpowers/plan/2026-09-19-harness-dispatch-mvp.md`. Two execution options:
 
 **1. Subagent-Driven (recommended)** - I dispatch a fresh subagent per task, review between tasks, fast iteration
 

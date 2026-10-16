@@ -1101,7 +1101,7 @@ git commit -m "docs(harness): Phase2 运行手册与经验沉淀 [APPROVED-BY: �
 
 ---
 
-Plan complete and saved to `docs/superpowers/plans/2026-09-19-harness-phase2-full-loop.md`. Two execution options:
+Plan complete and saved to `docs/superpowers/plan/2026-09-19-harness-phase2-full-loop.md`. Two execution options:
 
 **1. Subagent-Driven (recommended)** - I dispatch a fresh subagent per task, review between tasks, fast iteration
 

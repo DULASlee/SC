@@ -1,4 +1,10 @@
 # spec
 
-设计规格（specifications）。每个 spec 一文件，命名 spec-NNN-<name>.md。
+设计规格目录。每种规格一文件，命名二选一（保持创建时的名字，不回头改名）：
 
+- 日期前缀：`YYYY-MM-DD-<主题>-spec-vX.Y.md`（常规）
+- 中文名：《<主题>设计规格-vX.Y.md》（Owner 明确要求中文时）
+- 任务关联：`TASK-NNN-spec.md`（随任务卡走的规格）
+- 现状地图等特殊文件：保持原名（如 EXISTING-MAP.md）
+
+已退役：`specs/` 目录（2026-10-16 并入本目录）。

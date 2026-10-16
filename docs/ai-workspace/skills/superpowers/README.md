@@ -47,7 +47,7 @@
 |---|---|
 | 任务卡 `.harness/tasks/active/TASK-XXX.yaml` | 由 `writing-plans` 产出，由 `executing-plans`/`subagent-driven-development` 执行 |
 | CI 门禁（build/test/coverage/mutation） | `verification-before-completion` 要求每个 done 附新鲜证据 |
-| `docs/superpowers/spec/` + `docs/superpowers/splan/` | `brainstorming` 写 spec，`writing-plans` 写 splan |
+| `docs/superpowers/spec/` + `docs/superpowers/plan/` | `brainstorming` 写 spec，`writing-plans` 写 plan |
 
 ## 字节比对来源（详见各 ORIGIN.md）
 

@@ -238,7 +238,7 @@ public async Task Mqtt_Disconnect_30s_ZeroLoss_ZeroDuplicate()
 | ① 四份手写契约互不一致 | `docs/architecture/contract-consistency.md` 第 22、35、48、61、74、87、100 行明确记录 7+ 处不一致（snake_case vs camelCase、qualityCode 4 种编码、timestamp 单/双字段） | **完全成立** |
 | ② 删测试靠模型"自报"防不住 | `caa0f9f` 提交"修复 Shift-JIS 测试"只补了 NuGet 包，**没注册 CodePages provider**，导致 2 个 GBK/Shift-JIS 编码测试 100% 失败——这种"修复"如果不跑测试就被当成 Done | **完全成立** |
 | ③ x86 事实靠模型记忆 | `GenCollector.csproj` 第 11 行确有 `<PlatformTarget>x86</PlatformTarget>`，但 `GenDashboard.csproj`、`GenCollector.Tests.csproj` 等 5 个项目均未显式声明 | **完全成立** |
-| ④ 证据由 Agent 自己写 JSON | `docs/superpowers/plans/2026-09-17-c9-go-gateway-rebuild.md` 与 phase 0 计划均使用"Agent 写 evidence/*.json 然后 CI 检查"模式 | **完全成立** |
+| ④ 证据由 Agent 自己写 JSON | `docs/superpowers/plan/2026-09-17-c9-go-gateway-rebuild.md` 与 phase 0 计划均使用"Agent 写 evidence/*.json 然后 CI 检查"模式 | **完全成立** |
 | ⑤ `reliability-verifier` = 同一模型换 prompt | 评审准确指出了它的弱点（同一知识盲区、同一幻觉倾向、换上下文重犯） | **完全成立** |
 | ⑥ 复杂度是弱模型的敌人 | 当前 `.specstory/cli/config.toml` + 多层 plans/specs/reports 已存在相当多结构；再加 MCP×2 + Skills×4 + Hooks×3 会让约束层超过 Agent 可靠工作集 | **完全成立** |
 
