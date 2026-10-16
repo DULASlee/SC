@@ -46,6 +46,7 @@ scope:
   - AGENTS.md
   - docs/testing/red/TASK-046/f5-command-reconciliation.md
   - docs/testing/red/TASK-046/t10-live-deferral.md
+  - .harness/evidence/p0/*
   deny_write:
   - src/**
   - tests/GenCollector.Tests/**
