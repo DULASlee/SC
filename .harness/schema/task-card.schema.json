@@ -3,7 +3,16 @@
   "title": "TaskCard",
   "description": "L3 任务卡：定义单个开发任务的边界、验收标准和完成条件",
   "type": "object",
-  "required": ["id", "title", "status", "created", "created_by", "scope", "acceptance_tests", "done_when"],
+  "required": [
+    "id",
+    "title",
+    "status",
+    "created",
+    "created_by",
+    "scope",
+    "acceptance_tests",
+    "done_when"
+  ],
   "additionalProperties": false,
   "properties": {
     "id": {
@@ -19,7 +28,13 @@
     },
     "status": {
       "type": "string",
-      "enum": ["draft", "ready", "in-progress", "blocked", "done"],
+      "enum": [
+        "draft",
+        "ready",
+        "in-progress",
+        "blocked",
+        "done"
+      ],
       "description": "任务状态。draft=草稿；ready=可执行；in-progress=执行中；blocked=阻塞；done=已验收"
     },
     "created": {
@@ -29,24 +44,34 @@
     },
     "created_by": {
       "type": "string",
-      "enum": ["architect", "strong-model"],
+      "enum": [
+        "architect",
+        "strong-model"
+      ],
       "description": "任务卡创建者。必须是架构师或强模型，不能是执行者"
     },
     "scope": {
       "type": "object",
-      "required": ["allow_write", "deny_write"],
+      "required": [
+        "allow_write",
+        "deny_write"
+      ],
       "additionalProperties": false,
       "properties": {
         "allow_write": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "允许写入的路径 glob。执行者只能修改这些路径下的文件"
         },
         "deny_write": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "禁止写入的路径 glob。即使匹配 allow_write，deny_write 优先级更高"
         }
       }
@@ -54,7 +79,9 @@
     "acceptance_tests": {
       "type": "array",
       "minItems": 1,
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "验收测试文件路径。由架构师预先写好，初始为红"
     },
     "done_when": {
@@ -92,7 +119,9 @@
     },
     "references": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "相关 ADR、契约、文档的路径或 ID"
     },
     "notes": {
@@ -106,7 +135,9 @@
     },
     "skills": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "执行者可加载的 skill 列表"
     },
     "pipeline": {
@@ -120,7 +151,25 @@
     "approver": {
       "type": "string",
       "description": "架构师审批人。触碰受保护路径的提交需覆盖卡含非空 approver",
-      "enum": ["architect"]
+      "enum": [
+        "architect"
+      ]
+    },
+    "covers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^REQ-[0-9]{3,}$"
+      },
+      "description": "本卡承接的需求 ID 列表（登记表 .harness/registry/requirements.yaml）"
+    },
+    "contracts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^CTR-[0-9]{3,}$"
+      },
+      "description": "本卡依赖的契约 ID 列表（登记表 .harness/registry/contracts.yaml）"
     }
   }
 }

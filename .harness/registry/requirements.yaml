@@ -1,0 +1,9 @@
+# 需求登记表（TASK-052 引入）
+#
+# 用途：需求 ID 的唯一源。任务卡通过 covers 字段声明承接哪些需求。
+# 校验：covers 引用的 ID 必须在此登记；status=active 的需求必须至少被一张 active 卡承接。
+#
+# 状态取值：active | done | dropped
+
+schema_version: 1
+items: []

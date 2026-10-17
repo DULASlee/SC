@@ -1,0 +1,48 @@
+id: TASK-057
+title: "P1 validator atomic adoption: schema registry generator tests single commit"
+status: in-progress
+created: '2026-10-17T01:50:00Z'
+created_by: strong-model
+approver: architect
+scope:
+  allow_write:
+  - .harness/scripts/validate-task-card.py
+  - .harness/schema/task-card.schema.json
+  - .harness/registry/known-shared-tests.yaml
+  - .harness/registry/contracts.yaml
+  - .harness/registry/requirements.yaml
+  - .harness/scripts/gen-task-cards.py
+  - .harness/tests/test_card_acceptance_integrity.py
+  - .harness/tests/test_card_dependency_graph.py
+  - .harness/tests/test_card_traceability.py
+  - .harness/tests/test_gen_task_cards.py
+  - .harness/tests/test_gen_task_cards_integrity.py
+  - .harness/tests/test_validate_task_card.py
+  - .harness/tasks/active/TASK-057.yaml
+  - .harness/evidence/p1/*
+  deny_write:
+  - src/**
+  - tests/GenCollector.Tests/**
+  - tests/GenDashboard.Tests/**
+  - contracts/**
+  - Directory.Build.props
+  - Directory.Build.targets
+acceptance_tests:
+- .harness/tests/test_validate_task_card.py
+- .harness/tests/test_card_acceptance_integrity.py
+- .harness/tests/test_card_dependency_graph.py
+- .harness/tests/test_card_traceability.py
+- .harness/tests/test_gen_task_cards.py
+- .harness/tests/test_gen_task_cards_integrity.py
+done_when:
+- 'ci: harness_tests'
+constraints:
+  max_lines_changed: 2500
+  max_files_changed: 25
+references:
+- docs/superpowers/spec/切片治理设计规格-v1.0.md
+notes: |
+  P1 atomic adoption per slice plan Task 1.
+  Owner-approved single-commit收编 of validator loosening, schema covers/contracts,
+  registry triple, generator, and six test files.
+  Evidence: .harness/evidence/p1/adoption-approval.json and file-review.md.

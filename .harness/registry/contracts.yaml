@@ -1,0 +1,9 @@
+# 契约登记表（TASK-052 引入）
+#
+# 用途：契约 ID 的唯一源。任务卡通过 contracts 字段声明依赖哪些契约。
+# 校验：contracts 引用的 ID 必须在此登记且 frozen=true。
+#
+# 冻结语义：未冻结的契约不允许被任务卡依赖。
+
+schema_version: 1
+items: []

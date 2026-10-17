@@ -1,0 +1,41 @@
+# 历史遗留共享验收测试清单（TASK-050 引入）
+#
+# 背景：TASK-050 之前，校验器只允许 acceptance_tests 落在 tests/ 或 *.Tests/ 下，
+# 导致修改 harness 自身的任务卡无法引用 .harness/tests/ 下的真实测试，
+# 只能统一填 tests/ArchitectureTests/ArchitectureTests.csproj（占位），
+# 使"Done 只来自 CI"失去依据。
+#
+# 本清单把这些「历史遗留的批量共享」登记为豁免，使新校验不误伤存量卡。
+# 豁免规则：基线路径只对 cards 清单内的卡豁免；
+#           未列入清单的卡引用基线路径 -> 判错（防止新卡复用旧占位）。
+#
+# 还清历史债后请清空 baseline 列表。
+
+schema_version: 1
+baseline:
+  - path: tests/ArchitectureTests/ArchitectureTests.csproj
+    reason: "TASK-050 之前的结构性遗留：harness 卡无法引用 .harness/tests/，统一填占位"
+    cards:
+      - TASK-008
+      - TASK-009
+      - TASK-010
+      - TASK-011
+      - TASK-012
+      - TASK-013
+      - TASK-014
+      - TASK-017
+      - TASK-018
+      - TASK-019
+      - TASK-020
+      - TASK-022
+      - TASK-023
+      - TASK-024
+      - TASK-031
+      - TASK-033
+      - TASK-041
+      - TASK-042
+      - TASK-043
+      - TASK-044
+      - TASK-045
+      - TASK-046
+      - TASK-047

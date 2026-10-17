@@ -1,0 +1,8 @@
+{
+  "M": 259,
+  "N": 258,
+  "M_failures": 0,
+  "N_failures": 1,
+  "N_source": "Task0 baseline.json ran",
+  "note": "gen-cards overlap fixed, +1 net (new suites minus template fix)"
+}
