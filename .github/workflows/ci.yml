@@ -257,6 +257,28 @@ jobs:
           path: review-report.md
 
   # ============================================
+  # P4 规划层：依赖图与需求链接（环/悬空/覆盖三类违规直接失败）
+  # ============================================
+  plan-graph:
+    name: P4 Plan Graph
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install pyyaml
+
+      - name: Check dependency graph
+        run: python .harness/scripts/check-dependency-graph.py
+
+      - name: Check requirement links
+        run: python .harness/scripts/check-requirement-links.py
+
+  # ============================================
   # F3 云端归属/轨迹检查（isolation-revision：本地钩子可被
   # --no-verify 绕过，云端做等价只读检查；仅 pull_request 触发）
   # ============================================
