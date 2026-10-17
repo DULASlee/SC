@@ -1,0 +1,3 @@
+code-commit: 83124e7
+final: to-be-amended, see git rev-parse HEAD
+note: evidence amended into same single commit; verify via git show --stat and rev-list --count origin/main..HEAD == 1

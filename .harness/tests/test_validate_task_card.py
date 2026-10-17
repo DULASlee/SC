@@ -85,6 +85,42 @@ class TestValidateCard(unittest.TestCase):
             self.assertTrue(errors)
 
 
+class TestHarnessRootsAccepted(unittest.TestCase):
+    """isolation-revision 根因修：harness 自身的真实测试必须可被引用，
+    同时旧拦截（野路径、野 gate）必须仍然变红——只放行真实测试，
+    不放宽其他任何东西。"""
+
+    def setUp(self):
+        self.mod = load_mod()
+        self.schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+
+    def _errors(self, **kw):
+        import tempfile
+        card = valid_card_dict()
+        card.update(kw)
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "TASK-901.yaml"
+            write_card(p, card)
+            return self.mod.validate_card(p, self.schema)
+
+    def test_harness_tests_root_accepted(self):
+        errs = self._errors(
+            acceptance_tests=[".harness/tests/test_coord.py"])
+        self.assertEqual(errs, [])
+
+    def test_harness_tests_gate_accepted(self):
+        errs = self._errors(done_when=["ci: harness_tests"])
+        self.assertEqual(errs, [])
+
+    def test_wild_path_still_rejected(self):
+        errs = self._errors(acceptance_tests=["docs/notes.md"])
+        self.assertTrue(errs)
+
+    def test_wild_gate_still_rejected(self):
+        errs = self._errors(done_when=["ci: whatever_gate"])
+        self.assertTrue(errs)
+
+
 class TestCliOutputAscii(unittest.TestCase):
     def test_all_mode_output_is_ascii(self):
         r = subprocess.run(

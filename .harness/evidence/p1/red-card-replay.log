@@ -1,0 +1,4 @@
+RED-901-wild-path.yaml: exit=1
+RED-902-wild-gate.yaml: exit=1
+RED-903-swallowed.yaml: exit=1
+tmp-clean: True (files=0)
