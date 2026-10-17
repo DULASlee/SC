@@ -1,0 +1,15 @@
+P5 Step2 trim + query 2026-10-17:
+- lessons-learned.md sha256 at read: 98ed6b8b624f1c36c333e350bca332fd77746f39e93e2a84fe6fffdeb0f2a848
+- random sample (seed 7) 10 lines for Owner no-loss verdict (pending acceptance):
+  L46: - [skill-install] Skill 正文自报来源（"salvaged from PR #1232 by ...")必须独立验证—
+  L22: - [TASK-009/010] 施工包 Phase H 期望"无 WARN"是错配 → 文件迁移（git mv）不等于全局引用更新。迁移后
+  L55: - [skill-search][2026-09-19 反思][2026-09-21 标 deprecated] 搜 skill 不要漏 `
+  L89: - [cache][2026-09-20] **真 miss 的主导可控变量是会话龄期，不是 prompt 规模**：距上次前缀改写 >60
+  L9: - [TASK-003] Windows Python subprocess 默认 GBK 编码 → 必须显式指定 `encoding='u
+  L12: - [TASK-004/005/006] git commit-tree 在 unborn 状态下构造测试 commit → 会损坏本地 g
+  L74: - [model-config][2026-09-20] DSH 会话 prompt 达 32-44 万 tok/步（中位 32.9 万），
+  L15: - [PR 4] 施工包中 done_when 写了非法 gate 格式 → 施工包作者必须先用 validate-task-card 校验
+  L51: - [harness] skill-find 的前序 skill 是 **NONE**（entry-point，由用户触发短语直接调用）——
+  L80: - [search-tooling][2026-09-20] 已交付 `docs/ai-workspace/tools/jqkj-searc
+- verdict: PENDING owner at unified acceptance; no lines removed in draft
+- list_attempts check: see below
