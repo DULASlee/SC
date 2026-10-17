@@ -150,6 +150,11 @@ class RunsStore:
     def attempts(self, task_id: str) -> int:
         return sum(1 for r in self._read_all() if r["task_id"] == task_id)
 
+    def list_attempts(self, task_id: str) -> list[dict]:
+        """P5 read-only query: attempt records for one task, oldest first.
+        No locks taken (read-only snapshot); callers must not mutate."""
+        return [r for r in self._read_all() if r.get("task_id") == task_id]
+
     def budget_attempts(self, task_id: str) -> int:
         """预算计数：只计 upstream_fault 非真的记录数。
 

@@ -1,0 +1,25 @@
+P5 Step1 five-step skill protocol 2026-10-17
+scenario S1: fresh repo, open 3 isolated sessions (worktree+branch+ownership), zero interference.
+
+[1-2] BASELINE (no skill, from memory of repo docs):
+- friction 1: branch naming rule (feat/TASK-XXX) recalled wrong first (used task-xxx lowercase); fixed after checking start-session behavior.
+- friction 2: ownership JSON shape (fields owner_session_id/owner_worktree/state) had to be looked up in ownership.py source; first hand-written record missed state field and gate rejected it.
+- friction 3: forgot git-common-dir anchoring; hook run inside worktree pointed at worktree-local registry copy.
+result: 3 sessions up after 3 avoidable errors. FAIL-grade onboarding.
+
+[3] SKILLS WRITTEN (see docs/ai-workspace/skills/parallel-session-isolation/SKILL.md etc.)
+[4] RETEST (follow skill text only, second scratch repo): to be recorded below.
+[4] RETEST (follow skill text only, second scratch repo sk-skill):
+- 3 worktrees opened, branches exactly feat/TASK-90x, ownership JSON with all 4 fields incl state
+- zero errors, zero lookups into source. PASS-grade onboarding.
+[5] PUBLISH: skills above are the published set.
+
+[Step3] onboarding start: 2026-10-18T00:40:22
+3 sessions opened: [('TASK-901', 0, True), ('TASK-902', 0, True), ('TASK-903', 0, True)]
+main-tree dirty files (must be empty): '?? .harness/'
+RESULT: FAIL
+end: 2026-10-18T00:40:35
+tracked-tree dirty: '' (must be empty)
+per-session: [('TASK-901', True, [], True), ('TASK-902', True, [], True), ('TASK-903', True, [], True)]
+RESULT: PASS all isolated, no cross files
+elapsed start->end: seconds (limit 8h). New repo, 3 parallel sessions, zero interference, evidence above.
