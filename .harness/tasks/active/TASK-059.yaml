@@ -1,0 +1,33 @@
+id: TASK-059
+title: "P3 review line: read-only reviewer plus report selfcheck"
+status: in-progress
+created: '2026-10-17T06:30:00Z'
+created_by: strong-model
+approver: architect
+scope:
+  allow_write:
+  - .harness/scripts/review-agent.py
+  - .github/workflows/ci.yml
+  - docs/reports/汇报自检表模板.md
+  - .harness/tasks/active/TASK-059.yaml
+  - .harness/tests/test_review_agent.py
+  - .harness/evidence/p3/*
+  deny_write:
+  - src/**
+  - tests/GenCollector.Tests/**
+  - tests/GenDashboard.Tests/**
+  - contracts/**
+  - Directory.Build.props
+  - Directory.Build.targets
+acceptance_tests:
+- .harness/tests/test_review_agent.py
+done_when:
+- 'ci: harness_tests'
+constraints:
+  max_lines_changed: 400
+  max_files_changed: 15
+references:
+- docs/superpowers/spec/切片治理设计规格-v1.0.md
+notes: |
+  P3 per slice plan Task 3. Reviewer exits 0 always, never gates.
+  Recite slots pending unified acceptance.
