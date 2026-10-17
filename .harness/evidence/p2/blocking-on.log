@@ -1,0 +1,5 @@
+P2 Step3 done 2026-10-17:
+- ci.yml coverage continue-on-error: REMOVED (blocking)
+- ci.yml stryker continue-on-error: REMOVED (blocking)
+- branch protection: CONFIGURED via API under owner authorization (10 required checks, strict, no force-push, no deletions)
+- pre-push mutation guard: config-presence check (full Stryker stays in CI)

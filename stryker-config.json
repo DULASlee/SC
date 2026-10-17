@@ -1,5 +1,6 @@
 {
   "stryker-config": {
+    "_comment": "P2 gates live since 2026-10-17: break 15 enforced blocking in CI",
     "project": "src/Collector/GenCollector/GenCollector.csproj",
     "test-projects": ["tests/GenCollector.Tests/GenCollector.Tests.csproj"],
     "reporters": ["html", "json"],

@@ -53,9 +53,12 @@ else
     info "coverage-diff script not found, skipping (L2-B partial stage not enabled)"
 fi
 
-# 3. 变异测试（如果配置存在）
+# 3. 变异配置守卫（P2：只验配置存在与阈值键齐全，不跑全量变异；
+#    全量变异由 CI 承担，本地跑一次太慢）
 if [ -f "stryker-config.json" ]; then
-    info "mutation testing in observation period, blocking skipped (L2-B stage, break=15)"
+    python -c "import json,sys; d=json.load(open('stryker-config.json',encoding='utf-8')); t=((d.get('stryker-config') or {}).get('thresholds') or {}); sys.exit(0 if 'break' in t else 1)" \
+        && ok "stryker thresholds present" \
+        || fail "stryker-config.json thresholds.break missing"
 else
     info "stryker-config.json not found, skipping mutation testing"
 fi
