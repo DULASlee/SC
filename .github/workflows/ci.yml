@@ -112,15 +112,15 @@ jobs:
           reporttypes: 'Html;Cobertura;JsonSummary'
 
       # 覆盖率阈值已转正（P2）：失败即整单失败
-      - name: Check Coverage Threshold (Line >= 80%)
+      - name: Check Coverage Threshold (Line >= 100%)
         if: always()
         shell: bash
         run: |
           COVERAGE=$(cat coveragereport/Summary.json | jq -r '.summary.linecoverage')
           echo "Line coverage: ${COVERAGE}%"
           # Note: bash arithmetic via awk (more portable than bc on ubuntu-latest)
-          if [ "$(awk -v c="$COVERAGE" 'BEGIN { print (c < 80) ? 1 : 0 }')" -eq 1 ]; then
-            echo "FAIL: Coverage ${COVERAGE}% is below 80% threshold"
+          if [ "$(awk -v c="$COVERAGE" 'BEGIN { print (c < 100) ? 1 : 0 }')" -eq 1 ]; then
+            echo "FAIL: Coverage ${COVERAGE}% is below 100% threshold"
             exit 1
           fi
 
