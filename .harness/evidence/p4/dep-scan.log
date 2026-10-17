@@ -1,0 +1,6 @@
+P4 Step1 dep-scan 2026-10-17:
+- live 33 active cards: clean (exit 0)
+- tmp ring pair: RING caught (exit 1)
+- tmp suspension: SUSPENSION caught (exit 1)
+- tmp covers REQ-999 vs empty registry: COVERAGE caught (exit 1)
+- tmp cleaned after verification

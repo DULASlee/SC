@@ -1,0 +1,7 @@
+P4 Step3 generator predicates 2026-10-17:
+- 3 trial cards generated to tmp/out (TASK-910/911/912)
+- predicate 1 (validates): all exit 0
+- predicate 2 (acceptance points at existing files): pass (existence check ran, no missing)
+- predicate 3 (done_when from gate enum): ci harness_tests accepted
+- placeholders in trial set: 0
+- tmp/out cleaned after verification

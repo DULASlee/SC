@@ -1,0 +1,35 @@
+id: TASK-060
+title: "P4 planning layer: depgraph links freeze predicates purge"
+status: in-progress
+created: '2026-10-17T13:30:00Z'
+created_by: strong-model
+approver: architect
+scope:
+  allow_write:
+  - .harness/scripts/check-dependency-graph.py
+  - .harness/scripts/check-requirement-links.py
+  - .harness/scripts/find-placeholders.py
+  - .harness/scripts/gen-task-cards.py
+  - .github/workflows/ci.yml
+  - .harness/tasks/active/TASK-060.yaml
+  - .harness/evidence/p4/*
+  deny_write:
+  - src/**
+  - tests/GenCollector.Tests/**
+  - tests/GenDashboard.Tests/**
+  - contracts/**
+  - Directory.Build.props
+  - Directory.Build.targets
+acceptance_tests:
+- .harness/tests/test_card_dependency_graph.py
+done_when:
+- 'ci: harness_tests'
+constraints:
+  max_lines_changed: 800
+  max_files_changed: 15
+references:
+- docs/superpowers/spec/切片治理设计规格-v1.0.md
+notes: |
+  P4 per slice plan Task 4. Placeholders: 28 raw, 25 baseline-exempt,
+  3转裁定 (TASK-053 x2 other-active, TASK-058 x1 own-merged).
+  Live code change this slice: 0 placeholder edits.
