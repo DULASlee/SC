@@ -74,6 +74,10 @@ def _write_result(run_dir: Path, out: str, err: str, rc: int) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", required=True)
+    ap.add_argument("--session-id", default=None,
+                    help="owner session id, exported to the child as "
+                         "HARNESS_SESSION_ID so commit-time gates can "
+                         "verify committer identity (isolation-revision F1)")
     ap.add_argument("command", nargs=argparse.REMAINDER)
     args = ap.parse_args()
     run_dir = Path(args.run_dir)
@@ -91,9 +95,12 @@ def main() -> int:
 
     try:
         exec_cmd = _resolve_windows_cmd(cmd)
+        child_env = dict(os.environ)
+        if args.session_id:
+            child_env["HARNESS_SESSION_ID"] = args.session_id
         proc = subprocess.run(
             exec_cmd, capture_output=True, text=True,
-            encoding="utf-8", errors="replace",
+            encoding="utf-8", errors="replace", env=child_env,
         )
         out, err, rc = proc.stdout, proc.stderr, proc.returncode
     except OSError as exc:

@@ -148,5 +148,80 @@ class TestAssembleArgv(unittest.TestCase):
                          ["app", "--ask=Q"])
 
 
+class TestEnsureWorktreeOwnership(unittest.TestCase):
+    """F8: existing dir reused only by its owner."""
+
+    def _repo(self, tmp):
+        from pathlib import Path as _P
+        root = _P(tmp)
+        git("init", cwd=root)
+        git("config", "user.email", "t@t", cwd=root)
+        git("config", "user.name", "t", cwd=root)
+        (root / "a.txt").write_text("a", encoding="utf-8")
+        git("add", "-A", cwd=root)
+        git("commit", "-m", "init", cwd=root)
+        return root
+
+    def test_reuse_by_owner_passes(self):
+        import json
+        mod = load_dispatch()
+        with TemporaryDirectory() as tmp:
+            from pathlib import Path as _P
+            root = self._repo(tmp)
+            wt_root = root / ".harness" / "worktrees"
+            wt_root.mkdir(parents=True)
+            wt = wt_root / "TASK-901"
+            wt.mkdir()
+            runs = root / ".harness" / "runs"
+            (runs / "ownership").mkdir(parents=True)
+            (runs / "ownership" / "TASK-901.json").write_text(json.dumps({
+                "task_id": "TASK-901", "owner_session_id": "manual:t",
+                "owner_worktree": str(wt.resolve()).replace("\\", "/"),
+                "state": "claimed"}), encoding="utf-8")
+            got = mod.ensure_worktree("TASK-901", root, wt_root, runs,
+                                      "manual:t")
+            self.assertEqual(got, wt)
+
+    def test_reuse_by_stranger_refused(self):
+        import json
+        mod = load_dispatch()
+        with TemporaryDirectory() as tmp:
+            from pathlib import Path as _P
+            root = self._repo(tmp)
+            wt_root = root / ".harness" / "worktrees"
+            wt_root.mkdir(parents=True)
+            wt = wt_root / "TASK-901"
+            wt.mkdir()
+            runs = root / ".harness" / "runs"
+            (runs / "ownership").mkdir(parents=True)
+            (runs / "ownership" / "TASK-901.json").write_text(json.dumps({
+                "task_id": "TASK-901", "owner_session_id": "manual:a",
+                "owner_worktree": str(wt.resolve()).replace("\\", "/"),
+                "state": "claimed"}), encoding="utf-8")
+            with self.assertRaises(RuntimeError):
+                mod.ensure_worktree("TASK-901", root, wt_root, runs,
+                                    "manual:b")
+
+    def test_reuse_released_passes(self):
+        import json
+        mod = load_dispatch()
+        with TemporaryDirectory() as tmp:
+            from pathlib import Path as _P
+            root = self._repo(tmp)
+            wt_root = root / ".harness" / "worktrees"
+            wt_root.mkdir(parents=True)
+            wt = wt_root / "TASK-901"
+            wt.mkdir()
+            runs = root / ".harness" / "runs"
+            (runs / "ownership").mkdir(parents=True)
+            (runs / "ownership" / "TASK-901.json").write_text(json.dumps({
+                "task_id": "TASK-901", "owner_session_id": "manual:a",
+                "owner_worktree": str(wt.resolve()).replace("\\", "/"),
+                "state": "released"}), encoding="utf-8")
+            got = mod.ensure_worktree("TASK-901", root, wt_root, runs,
+                                      "manual:b")
+            self.assertEqual(got, wt)
+
+
 if __name__ == "__main__":
     unittest.main()

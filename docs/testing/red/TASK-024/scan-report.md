@@ -27,7 +27,7 @@
   并 re-export `glob_to_regex` 纯函数——**适配器，非重复实现**（docstring 明写「复用不复制」）。
 - live 调用方：`poll.py:24` `from check_local_scope_compat import glob_to_regex`。
 - 文档契约：`.harness/README.md:255`（scripts 清单表明确该文件唯一职责）+
-  `docs/superpowers/plans/2026-09-19-harness-dispatch-mvp.md:885-896`（创建决策记录）。
+  `docs/superpowers/plan/2026-09-19-harness-dispatch-mvp.md:885-896`（创建决策记录）。
 - **裁定：保留（有 live 调用方 + 文档契约 + 唯一职责明确，不满足「无调用方/无契约」删除条件）。零代码变更。**
 
 ## C7 复核：check-local-scope 自动模式 WARN 语义

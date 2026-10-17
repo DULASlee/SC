@@ -916,7 +916,7 @@ git commit -m "test: add Phase 0 complete test suite"
 
 ## 三、Phase 1 预告（MQTT 重连 + 驱动重连 + 离线缓存）
 
-Phase 1 计划文件：`docs/superpowers/plans/2026-09-17-industrial-platform-phase1.md`
+Phase 1 计划文件：`docs/superpowers/plan/2026-09-17-industrial-platform-phase1.md`
 
 Phase 1 包含三个子任务：
 
@@ -962,7 +962,7 @@ Phase 1 包含三个子任务：
 
 ## 六、执行选项
 
-**Plan complete and saved to `docs/superpowers/plans/2026-09-17-industrial-platform-phase0.md` and `docs/superpowers/specs/2026-09-17-industrial-platform-design.md`.**
+**Plan complete and saved to `docs/superpowers/plan/2026-09-17-industrial-platform-phase0.md` and `docs/superpowers/specs/2026-09-17-industrial-platform-design.md`.**
 
 Two execution options:
 

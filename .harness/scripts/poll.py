@@ -73,10 +73,29 @@ def run(cmd: list[str], cwd: Path) -> tuple[int, str, str]:
 
 
 def pid_alive(pid: int) -> bool:
-    """Windows 无新依赖判活：tasklist 按 PID 过滤，命中数据行即存活。"""
-    p = subprocess.run(
-        ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
-        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    """跨平台判活，语义不变：进程存在即 True。
+    Windows 走 tasklist（无新依赖）；POSIX 走 os.kill(pid, 0)
+    （无权限 EPERM 视为存在，仅 ESRCH 算死亡）。此前直调 tasklist
+    在 Linux 云端 FileNotFoundError，人人喊打，根因修。
+    """
+    import os as _os
+    if _os.name != "nt":
+        try:
+            _os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            return True
+        except OSError:
+            return False
+        return True
+    try:
+        p = subprocess.run(
+            ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace")
+    except FileNotFoundError:
+        return False
     for line in (p.stdout or "").splitlines():
         cols = line.split('","')
         # CSV 无表头行形如："name.exe","1234","Console","1","1,234 K"

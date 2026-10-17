@@ -26,7 +26,7 @@
 | 我要放的东西 | 放哪里 |
 |---|---|
 | 设计规格 | `docs/superpowers/spec/` |
-| 实施计划 | `docs/superpowers/splan/` |
+| 实施计划 | `docs/superpowers/plan/` |
 | 架构文档/ADR | `docs/adr/`（事实惯例，ADR-001~010 均在此；原表 docs/architecture/adr/ 空置已修正，见 TASK-046 报告挂账3） |
 | 部署文档 | `docs/deployment/` |
 | 工作汇报 | `docs/reports/` |

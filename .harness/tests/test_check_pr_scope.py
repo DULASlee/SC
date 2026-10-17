@@ -96,5 +96,14 @@ class TestTaskIdLookup(unittest.TestCase):
             self.assertIn("TASK-901", err)
 
 
+class TestDeliverableStatuses(unittest.TestCase):
+    """isolation-revision: gate statuses must match the card schema
+    (hyphen in-progress, not underscore in_progress)."""
+
+    def test_deliverable_matches_schema_inflight(self):
+        mod = load_mod()
+        self.assertEqual(mod.DELIVERABLE_STATUSES, {"ready", "in-progress"})
+
+
 if __name__ == "__main__":
     unittest.main()

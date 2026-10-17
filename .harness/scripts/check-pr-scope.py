@@ -67,16 +67,20 @@ def match_patterns(path, patterns):
 
 def get_changed_files(base_ref):
     result = subprocess.run(
-        ["git", "diff", "--name-only", f"{base_ref}...HEAD"],
+        ["git", "-c", "core.quotepath=off", "diff", "--name-only",
+         f"{base_ref}...HEAD"],
         capture_output=True, text=True, check=True,
+        encoding="utf-8", errors="replace",
     )
     return [f for f in result.stdout.strip().split("\n") if f]
 
 
 def get_changed_lines(base_ref):
     result = subprocess.run(
-        ["git", "diff", "--numstat", f"{base_ref}...HEAD"],
+        ["git", "-c", "core.quotepath=off", "diff", "--numstat",
+         f"{base_ref}...HEAD"],
         capture_output=True, text=True, check=True,
+        encoding="utf-8", errors="replace",
     )
     total = 0
     for line in result.stdout.strip().split("\n"):
@@ -142,7 +146,7 @@ def extract_task_ids(text):
 
 
 # 只有这些状态的卡才有资格作为 PR 的授权卡
-DELIVERABLE_STATUSES = {"ready", "in_progress"}
+DELIVERABLE_STATUSES = {"ready", "in-progress"}
 
 
 def load_task_card(task_id):

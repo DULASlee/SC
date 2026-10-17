@@ -1,0 +1,50 @@
+# 施工包清单 — TASK-053（用于验证弱模型 MiniMax-M3 的执行能力）
+#
+# 说明：原批次 TASK-050/051/052 已由架构师直接实现并验证（214 测试全绿），
+# 故本清单只保留仍处于红态的 TASK-053。
+#
+# 用法：
+#   python .harness/scripts/gen-task-cards.py --manifest <本文件> --dry-run
+#   python .harness/scripts/gen-task-cards.py --manifest <本文件>
+
+batch: task-card-planning-layer-m3
+created_by: strong-model
+
+defaults:
+  done_when: ["ci: harness_tests"]
+  constraints:
+    max_lines_changed: 200
+    max_files_changed: 5
+  deny_write:
+    - src/**
+    - tests/**
+    - contracts/**
+    - .github/**
+    - Directory.Build.props
+    - Directory.Build.targets
+
+tasks:
+  - id: TASK-053
+    title: "P4 生成器引用完整性：拒绝悬空依赖 / 归档 ID 复用 / 重复 ID 部分落盘"
+    acceptance_tests:
+      - .harness/tests/test_gen_task_cards_integrity.py
+      - .harness/tests/test_gen_task_cards.py
+    allow_write:
+      - .harness/scripts/gen-task-cards.py
+      - .harness/tasks/active/TASK-053.yaml
+      - docs/ai-workspace/rules/lessons-learned.md
+    model: minimax-cn/MiniMax-M3
+    notes: |
+      ## 背景
+      gen-task-cards.py 在建卡时未做引用完整性校验，三个缺口已取证：
+        1) depends_on 引用不存在的 TASK-ID -> 照常生成（exit=0）
+        2) id 与 tasks/archive/ 中已归档的 TASK-ID 冲突 -> 照常生成（exit=0）
+        3) 同一清单内 id 重复 -> 报错但已写入第一张（部分落盘）
+
+      ## 目标
+      让 test_gen_task_cards_integrity.py 从红转绿，且不得破坏 test_gen_task_cards.py（回归）。
+
+      ## 边界
+      只改 .harness/scripts/gen-task-cards.py。
+      不得修改任何测试文件（验收测试已冻结，改测试视为作弊）。
+      不得修改接口契约。

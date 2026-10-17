@@ -1,0 +1,9 @@
+{
+  "main_sha": "66409f8af0ae8b86c4185c9226a861077a79a94d",
+  "ran": 258,
+  "failures": 1,
+  "failed": [
+    "test_generated_card_has_no_allow_deny_overlap"
+  ],
+  "ts": "2026-10-16T17:13:45.534250+00:00"
+}

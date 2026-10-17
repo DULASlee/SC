@@ -185,6 +185,29 @@ jobs:
         run: python .harness/scripts/validate-task-card.py --all
 
   # ============================================
+  # L3 harness 脚本自测（TASK-050 接线）
+  # 背景：此前 CI 没有任何 job 执行 .harness/tests/，
+  # 导致修改 harness 的任务卡其"CI 全绿"不含任何针对本次改动的验证。
+  # ============================================
+  harness-tests:
+    name: L3 Harness Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install pyyaml jsonschema
+
+      - name: Run harness unit tests
+        # F5 reconciled 2026-10-05 to the frozen baseline top-level
+        # (-t .harness); do not drift back to -t .harness/tests.
+        run: python -m unittest discover -s .harness/tests -t .harness -v
+
+  # ============================================
   # L3 PR scope 检查（仅在 pull_request 触发）
   # ============================================
   check-pr-scope:
@@ -210,6 +233,56 @@ jobs:
         env:
           PR_DESCRIPTION: ${{ github.event.pull_request.body }}
         run: python .harness/scripts/check-pr-scope.py --base origin/${{ github.base_ref }}
+
+  # ============================================
+  # F3 云端归属/轨迹检查（isolation-revision：本地钩子可被
+  # --no-verify 绕过，云端做等价只读检查；仅 pull_request 触发）
+  # ============================================
+  cloud-ownership:
+    name: F3 Cloud Ownership Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
+
+      - name: Check cloud ownership trail
+        run: python .harness/scripts/check-cloud-ownership.py --base origin/${{ github.base_ref }}
+
+  # ============================================
+  # F6 并发体检（三区三进程 V1-V10，isolation-revision：
+  # 动锁与归属即重跑；改坏自动变红）
+  # ============================================
+  parallel-substrate:
+    name: F6 Parallel Substrate Verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install pyyaml jsonschema
+
+      - name: Run V1-V10 substrate verification
+        run: python .harness/scripts/verify-parallel.py --out vp-matrix.txt
+
+      - name: Upload matrix
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parallel-substrate-matrix
+          path: vp-matrix.txt
 
   # ============================================
   # L4-A 工具链烟雾测试（可靠性测试骨架）

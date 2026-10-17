@@ -157,7 +157,7 @@ miss 是**黏性**的（非随机、非交替）。且两类步的 `cacheRead` �
 - `docs/ai-workspace/tools/agnes-cache-probe/` — 可复现判读工具（`miss_triage.py` 离线 / `cache_probe.py` 在线探针）
 - `docs/reports/2026-09-20-tool-result-context-bloat-analysis.md` — 230 条工具结果来源
 - `docs/reports/2026-09-20-precise-search-tooling.md` — 根因措施（检索工具）
-- `docs/superpowers/splan/agnes-3.0-flash-latency-remediation-splan.md` — 整改方案
+- `docs/superpowers/plan/2026-09-21-agnes-3.0-flash-latency-remediation-splan.md` — 整改方案
 - 取证脚本：`%TEMP%\miss_cause.py`、`miss_ttl.py`、`replica.py`、`size_miss.py`
 
 ---

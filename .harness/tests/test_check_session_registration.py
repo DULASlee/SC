@@ -1,10 +1,12 @@
-"""TASK-042/045: worktree commit ownership gate (hook engine) tests.
+"""TASK-042/045 + isolation-revision F1: worktree commit ownership gate
+(hook engine) tests.
 
 Fixture roots get a copy of the real scripts dir so the hook's
 git-common-dir-anchored import of ownership.py resolves (same layout as
 a merged main tree)."""
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -125,6 +127,165 @@ class TestOwnershipGate(unittest.TestCase):
                 "state": "claimed"}), encoding="utf-8")
             ok, msg = eng.check(wt, root, root / ".harness" / "runs")
             self.assertTrue(ok, msg)
+
+    def test_identity_match_verified(self):
+        """F1: committer == owner -> pass with identity verified."""
+        eng = load_hook()
+        with TemporaryDirectory() as tmp:
+            root = make_repo(tmp)
+            wt = make_worktree(root, "TASK-901")
+            write_claim(root, "TASK-901", "manual:t", wt)
+            old = os.environ.get("HARNESS_SESSION_ID")
+            os.environ["HARNESS_SESSION_ID"] = "manual:t"
+            try:
+                ok, msg = eng.check(wt, root, root / ".harness" / "runs")
+            finally:
+                if old is None:
+                    del os.environ["HARNESS_SESSION_ID"]
+                else:
+                    os.environ["HARNESS_SESSION_ID"] = old
+            self.assertTrue(ok, msg)
+            self.assertIn("identity verified", msg)
+
+    def test_identity_mismatch_warns_in_transition(self):
+        """F1 transition: mismatch without strict -> pass with WARN."""
+        eng = load_hook()
+        with TemporaryDirectory() as tmp:
+            root = make_repo(tmp)
+            wt = make_worktree(root, "TASK-901")
+            write_claim(root, "TASK-901", "manual:t", wt)
+            old = os.environ.get("HARNESS_SESSION_ID")
+            os.environ["HARNESS_SESSION_ID"] = "manual:intruder"
+            try:
+                ok, msg = eng.check(wt, root, root / ".harness" / "runs")
+            finally:
+                if old is None:
+                    del os.environ["HARNESS_SESSION_ID"]
+                else:
+                    os.environ["HARNESS_SESSION_ID"] = old
+            self.assertTrue(ok, msg)
+            self.assertIn("WARN", msg)
+
+    def test_identity_mismatch_rejected_in_strict(self):
+        """F1 target: mismatch with strict -> FAIL."""
+        eng = load_hook()
+        with TemporaryDirectory() as tmp:
+            root = make_repo(tmp)
+            wt = make_worktree(root, "TASK-901")
+            write_claim(root, "TASK-901", "manual:t", wt)
+            old_sid = os.environ.get("HARNESS_SESSION_ID")
+            old_strict = os.environ.get("HARNESS_STRICT_IDENTITY")
+            os.environ["HARNESS_SESSION_ID"] = "manual:intruder"
+            os.environ["HARNESS_STRICT_IDENTITY"] = "1"
+            try:
+                ok, msg = eng.check(wt, root, root / ".harness" / "runs")
+            finally:
+                if old_sid is None:
+                    del os.environ["HARNESS_SESSION_ID"]
+                else:
+                    os.environ["HARNESS_SESSION_ID"] = old_sid
+                if old_strict is None:
+                    del os.environ["HARNESS_STRICT_IDENTITY"]
+                else:
+                    os.environ["HARNESS_STRICT_IDENTITY"] = old_strict
+            self.assertFalse(ok, msg)
+            self.assertIn("mismatch", msg)
+
+    def test_identity_absent_rejected_in_strict(self):
+        """F1 target: no identity with strict -> FAIL."""
+        eng = load_hook()
+        with TemporaryDirectory() as tmp:
+            root = make_repo(tmp)
+            wt = make_worktree(root, "TASK-901")
+            write_claim(root, "TASK-901", "manual:t", wt)
+            old_sid = os.environ.get("HARNESS_SESSION_ID")
+            old_strict = os.environ.get("HARNESS_STRICT_IDENTITY")
+            os.environ.pop("HARNESS_SESSION_ID", None)
+            os.environ["HARNESS_STRICT_IDENTITY"] = "1"
+            try:
+                ok, msg = eng.check(wt, root, root / ".harness" / "runs")
+            finally:
+                if old_sid is not None:
+                    os.environ["HARNESS_SESSION_ID"] = old_sid
+                if old_strict is None:
+                    del os.environ["HARNESS_STRICT_IDENTITY"]
+                else:
+                    os.environ["HARNESS_STRICT_IDENTITY"] = old_strict
+            self.assertFalse(ok, msg)
+
+    def test_main_tree_bookkeeping_with_trail_passes(self):
+        """F2 M1: card file + ownership trail -> pass."""
+        eng = load_hook()
+        with TemporaryDirectory() as tmp:
+            root = make_repo(tmp)
+            wt = make_worktree(root, "TASK-901")
+            write_claim(root, "TASK-901", "manual:t", wt)
+            staged = [".harness/tasks/active/TASK-901.yaml"]
+            ok, msg = eng.check(root, root, root / ".harness" / "runs",
+                                staged)
+            self.assertTrue(ok, msg)
+            self.assertIn("trail", msg)
+
+    def test_main_tree_bookkeeping_without_trail_strict_fails(self):
+        """F2 M4: card file, no trail, strict -> FAIL."""
+        eng = load_hook()
+        with TemporaryDirectory() as tmp:
+            root = make_repo(tmp)
+            staged = [".harness/tasks/active/TASK-999.yaml"]
+            old_strict = os.environ.get("HARNESS_STRICT_IDENTITY")
+            os.environ["HARNESS_STRICT_IDENTITY"] = "1"
+            try:
+                ok, msg = eng.check(root, root,
+                                    root / ".harness" / "runs", staged)
+            finally:
+                if old_strict is None:
+                    del os.environ["HARNESS_STRICT_IDENTITY"]
+                else:
+                    os.environ["HARNESS_STRICT_IDENTITY"] = old_strict
+            self.assertFalse(ok, msg)
+
+    def test_main_tree_active_session_passes(self):
+        """F2 M2: identity owns a claimed task -> pass (any files)."""
+        eng = load_hook()
+        with TemporaryDirectory() as tmp:
+            root = make_repo(tmp)
+            wt = make_worktree(root, "TASK-901")
+            write_claim(root, "TASK-901", "manual:t", wt)
+            old_sid = os.environ.get("HARNESS_SESSION_ID")
+            os.environ["HARNESS_SESSION_ID"] = "manual:t"
+            try:
+                ok, msg = eng.check(root, root, root / ".harness" / "runs",
+                                    ["src/Biz.cs"])
+            finally:
+                if old_sid is None:
+                    del os.environ["HARNESS_SESSION_ID"]
+                else:
+                    os.environ["HARNESS_SESSION_ID"] = old_sid
+            self.assertTrue(ok, msg)
+            self.assertIn("active session", msg)
+
+    def test_main_tree_unknown_strict_fails(self):
+        """F2 M4: unknown identity, no trail, strict -> FAIL."""
+        eng = load_hook()
+        with TemporaryDirectory() as tmp:
+            root = make_repo(tmp)
+            old_sid = os.environ.get("HARNESS_SESSION_ID")
+            old_strict = os.environ.get("HARNESS_STRICT_IDENTITY")
+            os.environ["HARNESS_SESSION_ID"] = "manual:stranger"
+            os.environ["HARNESS_STRICT_IDENTITY"] = "1"
+            try:
+                ok, msg = eng.check(root, root, root / ".harness" / "runs",
+                                    ["src/Biz.cs"])
+            finally:
+                if old_sid is None:
+                    del os.environ["HARNESS_SESSION_ID"]
+                else:
+                    os.environ["HARNESS_SESSION_ID"] = old_sid
+                if old_strict is None:
+                    del os.environ["HARNESS_STRICT_IDENTITY"]
+                else:
+                    os.environ["HARNESS_STRICT_IDENTITY"] = old_strict
+            self.assertFalse(ok, msg)
 
 
 if __name__ == "__main__":

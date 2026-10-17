@@ -91,7 +91,8 @@ def create_session(root: Path, task_id: str, owner: str = "manual",
             raise RuntimeError(
                 f"{task_id} in-progress 且非本会话持有——拒绝接管"
                 "（§7.2 防双目录执行同一任务；遗留占坑请人工释放/复位后领取）")
-    wt = ensure_worktree(task_id, root, (root / cfg["worktree_root"]).resolve())
+    wt = ensure_worktree(task_id, root, (root / cfg["worktree_root"]).resolve(),
+                         runs_dir, sid)
     try:
         rec = ownership.claim(runs_dir, task_id, sid, wt)
     except ownership.OwnershipConflict as exc:
@@ -163,6 +164,10 @@ def main() -> int:
     if reg.get("context_file"):
         print(f"     context : {reg['context_file']}")
     print(f"     归属记录 : {reg['registration_file']}")
+    print(f"     身份导出 : 提交前执行 set HARNESS_SESSION_ID="
+          f"{reg['owner_session_id']}（cmd）或 "
+          f"$env:HARNESS_SESSION_ID=\"{reg['owner_session_id']}\""
+          f"（PowerShell），缺失时门禁仅告警（过渡期）")
     print(f"下一步：cd 到 worktree 后启动会话，只读上述 context。"
           f"释放：start-session.py {reg['task_id']} --owner {args.owner} --release")
     return 0
