@@ -130,7 +130,7 @@ jobs:
   # - 后续 L2-B+ 任务需提升覆盖率（critical path 加单测）
   mutation-test:
     name: L2-B Mutation Test (Stryker)
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: build-warnings-as-errors
     steps:
       - uses: actions/checkout@v4
