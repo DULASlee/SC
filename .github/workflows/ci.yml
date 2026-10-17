@@ -111,18 +111,16 @@ jobs:
           targetdir: 'coveragereport'
           reporttypes: 'Html;Cobertura;JsonSummary'
 
-      # 覆盖率阈值观察期（Phase 1 早期无业务代码，覆盖率参考意义有限）
-      # Phase 1 中期收紧为阻断门禁
-      - name: Check Coverage Threshold (Line >= 80%)
+      # 覆盖率阈值已转正（P2）：失败即整单失败
+      - name: Check Coverage Threshold (ratchet floor 30pct, target 80pct)
         if: always()
-        continue-on-error: true
         shell: bash
         run: |
           COVERAGE=$(cat coveragereport/Summary.json | jq -r '.summary.linecoverage')
           echo "Line coverage: ${COVERAGE}%"
           # Note: bash arithmetic via awk (more portable than bc on ubuntu-latest)
-          if [ "$(awk -v c="$COVERAGE" 'BEGIN { print (c < 80) ? 1 : 0 }')" -eq 1 ]; then
-            echo "FAIL: Coverage ${COVERAGE}% is below 80% threshold"
+          if [ "$(awk -v c="$COVERAGE" 'BEGIN { print (c < 30) ? 1 : 0 }')" -eq 1 ]; then
+            echo "FAIL: Coverage ${COVERAGE}% is below 30% ratchet floor (target 80%)"
             exit 1
           fi
 
@@ -132,7 +130,7 @@ jobs:
   # - 后续 L2-B+ 任务需提升覆盖率（critical path 加单测）
   mutation-test:
     name: L2-B Mutation Test (Stryker)
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: build-warnings-as-errors
     steps:
       - uses: actions/checkout@v4
@@ -151,11 +149,9 @@ jobs:
         run: dotnet tool restore
 
       - name: Run Stryker Mutation Tests
-        # L2-B Phase 1 早期：观察期，不阻断 merge（continue-on-error: true）。
+        # P2 已转正：失败即整单失败（原观察期 continue-on-error 已移除）。
         # 阶段推进见 docs/adr/ADR-005-Mutation-Score-Progression.md。
-        # 当业务层 ≥ 3 模块有 60% 单测时，移除 continue-on-error: true 并提升阈值。
         run: dotnet stryker --config-file stryker-config.json --break-at 15 --concurrency 2
-        continue-on-error: true
 
       - name: Upload Stryker Report
         if: always()

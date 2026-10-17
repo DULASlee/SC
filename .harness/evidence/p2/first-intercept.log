@@ -1,0 +1,5 @@
+P2 Step4 intercept proof 2026-10-17:
+- probe: slice/p2-redprobe set threshold 80->100, PR15
+- result: real coverage 31.1pct < 100pct, Check Coverage Threshold step FAIL, job L2-A red, run 39005807966 failure
+- chain validated: report -> threshold -> job fail -> run red
+- SIDE FINDING: real coverage 31.1pct is also < 80pct live gate; merging P2 as-is turns every PR red permanently

@@ -1,0 +1,2 @@
+base=80.0% head=79.9%
+FAIL: coverage regressed 80.0% -> 79.9%

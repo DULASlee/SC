@@ -1,0 +1,34 @@
+id: TASK-058
+title: "P2 gates live: coverage and mutation thresholds blocking"
+status: in-progress
+created: '2026-10-17T04:30:00Z'
+created_by: strong-model
+approver: architect
+scope:
+  allow_write:
+  - .github/workflows/ci.yml
+  - stryker-config.json
+  - IoTPlatform.sln
+  - scripts/check-coverage-diff.sh
+  - docs/ai-workspace/hooks/pre-push
+  - .harness/tasks/active/TASK-058.yaml
+  - .harness/evidence/p2/*
+  deny_write:
+  - src/**
+  - tests/GenCollector.Tests/**
+  - tests/GenDashboard.Tests/**
+  - contracts/**
+  - Directory.Build.props
+  - Directory.Build.targets
+acceptance_tests:
+- .harness/tests/test_check_session_registration.py
+done_when:
+- 'ci: harness_tests'
+constraints:
+  max_lines_changed: 200
+  max_files_changed: 15
+references:
+- docs/superpowers/spec/切片治理设计规格-v1.0.md
+notes: |
+  P2 per slice plan Task 2. Threshold owners and dates in evidence.
+  Branch protection enabled under owner authorization 2026-10-17.
