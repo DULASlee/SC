@@ -231,6 +231,32 @@ jobs:
         run: python .harness/scripts/check-pr-scope.py --base origin/${{ github.base_ref }}
 
   # ============================================
+  # P3 机器评审（只挑刺不放行：脚本退出码恒 0，结论不进分支保护）
+  # ============================================
+  review-bot:
+    name: P3 Review Bot
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run read-only review
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python .harness/scripts/review-agent.py --pr ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --out review-report.md
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-report-pr${{ github.event.pull_request.number }}
+          path: review-report.md
+
+  # ============================================
   # F3 云端归属/轨迹检查（isolation-revision：本地钩子可被
   # --no-verify 绕过，云端做等价只读检查；仅 pull_request 触发）
   # ============================================
