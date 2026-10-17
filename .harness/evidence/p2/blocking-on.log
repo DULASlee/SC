@@ -3,3 +3,7 @@ P2 Step3 done 2026-10-17:
 - ci.yml stryker continue-on-error: REMOVED (blocking)
 - branch protection: CONFIGURED via API under owner authorization (10 required checks, strict, no force-push, no deletions)
 - pre-push mutation guard: config-presence check (full Stryker stays in CI)
+P2 Stryker root causes fixed 2026-10-17:
+- target orphaned from sln by restructure (no GenCollector in IoTPlatform.sln) -> re-added both Collector projects
+- mutate globs case-mismatched (Config vs disk config) -> lowercased, score now real: 25.64pct >= break 15
+- plan deviation: IoTPlatform.sln added to change set (was not in Task2 file list); reason: gate cannot run at all without it; retro-approval requested

@@ -14,7 +14,7 @@
       "break": 15
     },
     "mutate": [
-      "**/Config/**/*.cs",
+      "**/config/**/*.cs",
       "**/Contracts/**/*.cs",
       "!**/obj/**"
     ]

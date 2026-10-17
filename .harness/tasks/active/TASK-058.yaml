@@ -8,6 +8,7 @@ scope:
   allow_write:
   - .github/workflows/ci.yml
   - stryker-config.json
+  - IoTPlatform.sln
   - scripts/check-coverage-diff.sh
   - docs/ai-workspace/hooks/pre-push
   - .harness/tasks/active/TASK-058.yaml
