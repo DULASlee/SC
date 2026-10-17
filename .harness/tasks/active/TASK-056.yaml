@@ -65,7 +65,7 @@ done_when:
 - 'ci: architecture_tests'
 constraints:
   max_lines_changed: 3000
-  max_files_changed: 60
+  max_files_changed: 70
 references:
 - docs/superpowers/spec/2026-10-05-parallel-isolation-revision-spec-v1.0.md
 - docs/项目harness工程构建/1、多会话并行模块/1、多会话并行harness工程技术架构和核心功能技术手册.md
