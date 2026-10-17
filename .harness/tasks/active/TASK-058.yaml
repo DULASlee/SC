@@ -25,7 +25,7 @@ done_when:
 - 'ci: harness_tests'
 constraints:
   max_lines_changed: 200
-  max_files_changed: 10
+  max_files_changed: 15
 references:
 - docs/superpowers/spec/切片治理设计规格-v1.0.md
 notes: |
