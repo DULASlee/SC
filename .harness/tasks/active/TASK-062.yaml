@@ -1,0 +1,35 @@
+id: TASK-062
+title: "Unified acceptance closeout: P3 P5 CLOSED plus waivers"
+status: in-progress
+created: '2026-10-18T01:00:00Z'
+created_by: strong-model
+approver: architect
+scope:
+  allow_write:
+  - .harness/tasks/active/TASK-062.yaml
+  - .harness/evidence/p3/CLOSED
+  - .harness/evidence/p3/recite.log
+  - .harness/evidence/p4/waiver.md
+  - .harness/evidence/p2/conflict.md
+  - .harness/evidence/p5/CLOSED
+  - .harness/evidence/p5/entry-gate.log
+  - .harness/evidence/p6/rollcall.md
+  deny_write:
+  - src/**
+  - tests/GenCollector.Tests/**
+  - tests/GenDashboard.Tests/**
+  - contracts/**
+  - Directory.Build.props
+  - Directory.Build.targets
+acceptance_tests:
+- .harness/tests/test_runs.py
+done_when:
+- 'ci: harness_tests'
+constraints:
+  max_lines_changed: 120
+  max_files_changed: 10
+references:
+- docs/superpowers/spec/切片治理设计规格-v1.0.md
+notes: |
+  Unified acceptance 2026-10-18. Owner rulings: reciter owner PASS;
+  placeholders waived; sln fix praised; P5 deemed passed.
