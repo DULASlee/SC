@@ -13,3 +13,4 @@
 - Status: STOPPED before merge. Waiting Owner ruling.
 - Date: 2026-10-17.
 - Ruling: Owner approved ratchet (option C) 2026-10-17. Live gate set to 30 floor, target 80.
+retro-approved by owner at unified acceptance 2026-10-18 (quote: sln fix praised). IoTPlatform.sln stays.
