@@ -2,3 +2,4 @@ P5 Step0 entry gate 2026-10-17:
 - Task0-4 CLOSED: p3 CLOSED missing (recite pending unified acceptance) -> NOT MET
 - main 7-day CI clean: NOT MET (main only hours old)
 - status: DRAFT per plan; build work proceeds, CLOSED held for acceptance
+deemed-passed by owner at unified acceptance 2026-10-18 (main green + branch protection live).
