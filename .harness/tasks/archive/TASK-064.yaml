@@ -1,6 +1,6 @@
 id: TASK-064
-title: "E2E probe: loop-owned evidence file end to end"
-status: ready
+title: 'E2E probe: loop-owned evidence file end to end'
+status: done
 created: '2026-10-18T00:00:00Z'
 created_by: strong-model
 approver: architect
@@ -25,6 +25,9 @@ constraints:
   max_files_changed: 5
 references:
 - docs/superpowers/spec/自驱引擎设计规格-v1.0.md
-notes: |
-  T5 e2e task. Worker writes the probe file; verifier checks it;
+notes: 'T5 e2e task. Worker writes the probe file; verifier checks it;
+
   merger merges; closeout marks done and archives.
+
+  '
+archived_at: '2026-10-30T10:28:32.875301+00:00'

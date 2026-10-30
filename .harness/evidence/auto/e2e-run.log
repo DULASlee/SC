@@ -1,0 +1,17 @@
+# e2e full run log (T5 Step 1) 2026-10-30
+
+Scope note: dispatch-spawn covered by prior evidence (RUNS history + poll
+tests); canary gate holds empty queue in this env. This run proves the NEW
+machinery end to end: worker edit -> verify -> merge -> closeout.
+
+1. worker: wrote .harness/evidence/auto/e2e-probe.txt on slice/e2e, TASK-064
+2. scope gate: PR22 green (31-line change within 40/5 caps after bump)
+3. review-agent on PR22: 0 serious, 0 important, 4 minor
+4. verify-agent on delivery set (probe + card): PASS, 2 files read
+5. merge-agent on PR22: first attempt correctly ESCALATED on stale red
+   Stryker (old run), second attempt 12 seen 0 red -> MERGED rc=0
+6. closeout on main: verify-all --operator dispatcher PASS (local VERIFY
+   file, gitignored per repo policy), card marked done, archived
+7. human clicks during gates: 0 (operator commands only, per plan)
+
+verdict: PASS, zero human gates hit
