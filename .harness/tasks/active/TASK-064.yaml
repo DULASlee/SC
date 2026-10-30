@@ -1,0 +1,30 @@
+id: TASK-064
+title: "E2E probe: loop-owned evidence file end to end"
+status: ready
+created: '2026-10-18T00:00:00Z'
+created_by: strong-model
+approver: architect
+scope:
+  allow_write:
+  - .harness/evidence/auto/e2e-probe.txt
+  - .harness/tasks/active/TASK-064.yaml
+  - .harness/tests/test_verify_agent.py
+  deny_write:
+  - src/**
+  - tests/GenCollector.Tests/**
+  - tests/GenDashboard.Tests/**
+  - contracts/**
+  - Directory.Build.props
+  - Directory.Build.targets
+acceptance_tests:
+- .harness/tests/test_verify_agent.py
+done_when:
+- 'ci: harness_tests'
+constraints:
+  max_lines_changed: 40
+  max_files_changed: 5
+references:
+- docs/superpowers/spec/自驱引擎设计规格-v1.0.md
+notes: |
+  T5 e2e task. Worker writes the probe file; verifier checks it;
+  merger merges; closeout marks done and archives.
