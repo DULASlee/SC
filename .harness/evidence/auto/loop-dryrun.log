@@ -1,0 +1,4 @@
+P4 loop dry-run 2026-10-18:
+- loop.py --once --no-merge: exit 0, all 4 scheduled stages invoked (dispatch/pipeline/poll/verify)
+- merge+closeout skipped by flag
+- dispatch: canary gate holds (no new dispatch without evidence) -> empty queue stays empty

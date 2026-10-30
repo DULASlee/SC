@@ -1,0 +1,6 @@
+P4 Step 3 real merge record (merge-agent dogfood) 2026-10-18:
+- command: merge-agent --pr 20 --repo DULASlee/SC --verdict verdict-pr20-PASS
+- pre-checks: 12 seen, 0 red; verdict: PASS; decision: merge
+- result: [MERGED], exit 0
+- merge commit: 8929390d665e3ed7211f36c551f0c21c83fc7222
+- human clicks during this merge: 0
