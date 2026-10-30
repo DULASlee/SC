@@ -1,0 +1,4 @@
+P4 resident 2026-10-18:
+- crash drill: kill -9 mid-sleep -> restart refuses within stale window (correct mutual exclusion), aged-700s lock broken, clean cycle, lock released
+- persistent scheduler: PENDING owner runs one schtasks command from docs/resident-loop.md (machine-state change, owner-only)
+- interim mode: manual invocation documented, no background loop running

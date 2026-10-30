@@ -25,6 +25,8 @@ scope:
   - .harness/scripts/merge-agent.py
   - .harness/scripts/loop.py
   - docs/resident-loop.md
+  - .harness/evidence/auto/loop-dryrun.log
+  - .harness/evidence/auto/resident.log
   - .harness/tasks/active/TASK-063.yaml
   - .harness/evidence/auto/*
   deny_write:
