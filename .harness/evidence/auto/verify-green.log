@@ -1,0 +1,10 @@
+GREEN sample: work has done.txt only
+[PASS] 1 files read, 0 problems -> C:\Users\admin\AppData\Local\Temp\opencode\vgreen\verdict.md
+# verifier verdict: PASS
+
+## files read
+- C:\Users\admin\AppData\Local\Temp\opencode\crit.md
+- C:\Users\admin\AppData\Local\Temp\opencode\vgreen\done.txt
+
+## findings
+- criteria met, all files inside allow-list

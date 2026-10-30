@@ -1,0 +1,10 @@
+RED sample: work has done.txt + private.txt(out of allow)
+[FAIL] 1 files read, 1 problems -> C:\Users\admin\AppData\Local\Temp\opencode\vred\verdict.md
+# verifier verdict: FAIL
+
+## files read
+- C:\Users\admin\AppData\Local\Temp\opencode\crit.md
+- C:\Users\admin\AppData\Local\Temp\opencode\vred\done.txt
+
+## findings
+- file outside allow-list, unread: private.txt
