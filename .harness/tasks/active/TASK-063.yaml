@@ -1,0 +1,38 @@
+acceptance_tests:
+- .harness/tests/test_policy.py
+- .harness/tests/test_verify_agent.py
+approver: architect
+constraints:
+  max_files_changed: 15
+  max_lines_changed: 1200
+created: '2026-10-18T01:00:00Z'
+created_by: strong-model
+done_when:
+- 'ci: harness_tests'
+id: TASK-063
+notes: 'Autodrive slice per plan v1.0. Rule file first, strict by default.
+
+  '
+references:
+- docs/superpowers/spec/自驱引擎设计规格-v1.0.md
+scope:
+  allow_write:
+  - .harness/policy.yaml
+  - .harness/scripts/policy.py
+  - .harness/tests/test_policy.py
+  - .harness/scripts/verify-agent.py
+  - .harness/tests/test_verify_agent.py
+  - .harness/scripts/merge-agent.py
+  - .harness/scripts/loop.py
+  - docs/resident-loop.md
+  - .harness/tasks/active/TASK-063.yaml
+  - .harness/evidence/auto/*
+  deny_write:
+  - src/**
+  - tests/GenCollector.Tests/**
+  - tests/GenDashboard.Tests/**
+  - contracts/**
+  - Directory.Build.props
+  - Directory.Build.targets
+status: in-progress
+title: 'Autodrive engine: policy plus verifier plus merger plus loop'

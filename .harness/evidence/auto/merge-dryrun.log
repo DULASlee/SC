@@ -1,0 +1,5 @@
+decide-matrix: all-green+PASS->merge; red-checks+PASS->escalate; green+FAIL->escalate; empty->escalate (unit-verified)
+pr: 16
+verdict: PASS
+checks: 11 seen, 0 red
+decision: merge

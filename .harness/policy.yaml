@@ -1,0 +1,16 @@
+# Machine authorization policy (P1, strict by default).
+#
+# Three tiers. Anything not listed escalates to a human.
+# Editing this file requires human approval (spec section 5).
+
+schema_version: 1
+
+# Paths the machine may touch unattended (evidence, reports).
+allow:
+  - .harness/evidence/auto/**
+  - docs/reports/**
+
+# Paths the machine must never touch, even with escalation.
+# (Secrets, identity, money-adjacent config would go here; none today,
+# but the tier exists so adding one is a one-line human-approved change.)
+forbid: []

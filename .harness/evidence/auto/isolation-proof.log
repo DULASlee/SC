@@ -1,0 +1,7 @@
+isolation: verifier CLI has no worker-session/context/reasoning input
+red verdict files-read list contains done.txt only, private.txt never read: True
+抽查历史已合入内容 (expect all PASS, 0 false kills):
+F:\JQKJ-auto\.harness\scripts: PASS
+F:\JQKJ-auto\.harness\tests: PASS
+F:\JQKJ-auto\docs\superpowers\plan: PASS
+抽查结论: 0 误杀
